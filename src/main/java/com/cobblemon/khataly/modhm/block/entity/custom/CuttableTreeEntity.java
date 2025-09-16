@@ -45,7 +45,7 @@ public class CuttableTreeEntity extends BlockEntity implements ExtendedScreenHan
     public void tick() {
         if (world == null) return;
 
-        Box box = new Box(pos).expand(0.5, 0.5, 0.5);
+        Box box = new Box(pos).expand(0.2, 0.2, 0.2);
         boolean playerInside = !world.getEntitiesByClass(PlayerEntity.class, box, p -> true).isEmpty();
 
         if (playerInside && !hasPlayed) {

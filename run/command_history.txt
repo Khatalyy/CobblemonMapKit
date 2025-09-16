@@ -9,3 +9,7 @@
 /teach @p 1 strength
 /teach @p 1 rocksmash
 /teach @p 1 cut
+/teach @p 1 fly
+/teach @p 1 flash
+/teach @p 1 fly
+/teach @p 1 flash

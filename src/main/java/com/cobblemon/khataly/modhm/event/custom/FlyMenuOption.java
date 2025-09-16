@@ -12,6 +12,7 @@ import com.cobblemon.mod.common.api.reactive.CancelableObservable;
 import com.cobblemon.mod.common.api.reactive.EventObservable;
 import com.cobblemon.mod.common.client.gui.interact.wheel.InteractWheelOption;
 import com.cobblemon.mod.common.client.gui.interact.wheel.Orientation;
+import com.google.common.collect.Multimap;
 import kotlin.Unit;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
@@ -60,7 +61,7 @@ public class FlyMenuOption {
         observable.subscribe(Priority.NORMAL, event -> {
             if (!canAddFlyOption) return null;
 
-            Identifier icon = Identifier.of(HMMod.MOD_ID, "textures/gui/icon_fly.png");
+            Identifier icon = Identifier.of(HMMod.MOD_ID, "textures/gui/fly/icon_fly.png");
             Identifier secondaryIcon = null;
             String tooltip = "Fly";
 
@@ -72,8 +73,25 @@ public class FlyMenuOption {
                 return Unit.INSTANCE;
             };
 
-            InteractWheelOption option = new InteractWheelOption(icon, secondaryIcon, tooltip, colourFunc, onPressFunc);
-            event.addOption(Orientation.TOP_LEFT, option);
+
+            InteractWheelOption option = new InteractWheelOption(icon, null, tooltip, colourFunc, onPressFunc);
+
+            // default TOP_LEFT
+            Orientation chosenOrientation = Orientation.TOP_LEFT;
+
+            // Se TOP_LEFT occupato, cerca il primo libero
+            Multimap<Orientation, InteractWheelOption> options = event.getOptions();
+            if (options.containsKey(chosenOrientation) && !options.get(chosenOrientation).isEmpty()) {
+                for (Orientation orientation : Orientation.values()) {
+                    if (!options.containsKey(orientation) || options.get(orientation).isEmpty()) {
+                        chosenOrientation = orientation;
+                        break;
+                    }
+                }
+            }
+
+            // aggiungi l’opzione
+            event.addOption(chosenOrientation, option);
 
             return null;
         });

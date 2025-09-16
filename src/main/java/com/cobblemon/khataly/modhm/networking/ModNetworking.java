@@ -47,6 +47,8 @@ public class ModNetworking {
         PayloadTypeRegistry.playC2S().register(FlyPacketC2S.ID, FlyPacketC2S.CODEC);
         PayloadTypeRegistry.playC2S().register(FlyMenuC2SPacket.ID, FlyMenuC2SPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(FlyMenuS2CPacket.ID, FlyMenuS2CPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(FlashMenuC2SPacket.ID, FlashMenuC2SPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(FlashMenuS2CPacket.ID, FlashMenuS2CPacket.CODEC);
         registerC2SPackets();
     }
 
@@ -56,6 +58,22 @@ public class ModNetworking {
         registerCutHandler();
         registerStrengthHandler();
         registerFlyHandler();
+        registerShowFlashMenuHandler();
+    }
+
+    private static void registerShowFlashMenuHandler() {
+        ServerPlayNetworking.registerGlobalReceiver(FlashMenuC2SPacket.ID, (payload, context) -> {
+            System.out.println("Receiver FlashMenuC2SPacket registrato");
+            ServerPlayerEntity player = context.player();
+            context.server().execute(() -> {
+                // ✅ Usa payload.pokemonId() perché è un record
+                boolean canFlash = PartyUtils.pokemonHasFlashInParty(player, payload.pokemonId());
+                System.out.println(canFlash + " variabile bool flash nel pokemon");
+
+                // Invia pacchetto S2C
+                ServerPlayNetworking.send(player, new FlashMenuS2CPacket(canFlash));
+            });
+        });
     }
 
     private static void registerShowFlyMenuHandler() {
@@ -72,6 +90,8 @@ public class ModNetworking {
             });
         });
     }
+
+
 
 
 

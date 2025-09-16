@@ -106,5 +106,24 @@ public class PartyUtils {
         return false;
     }
 
+    /**
+     * Ritorna il pokemon che conosce fly
+     */
+    public static Boolean pokemonHasFlashInParty(ServerPlayerEntity player, UUID pokemonId) {
+        MoveTemplate fly = Moves.INSTANCE.getByName("flash");
+        PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
+
+        for (Pokemon pokemon : party) {
+            if (!pokemon.getUuid().equals(pokemonId)) continue;
+
+            for (Move move : pokemon.getMoveSet().getMoves()) {
+                if (move.getTemplate() == fly) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
 }
