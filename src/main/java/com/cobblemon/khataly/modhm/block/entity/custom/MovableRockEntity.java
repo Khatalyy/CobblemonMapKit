@@ -2,6 +2,7 @@ package com.cobblemon.khataly.modhm.block.entity.custom;
 
 import com.cobblemon.khataly.modhm.block.entity.ModBlockEntities;
 import com.cobblemon.khataly.modhm.screen.custom.StrengthScreenHandler;
+import com.cobblemon.khataly.modhm.sound.ModSounds;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -14,8 +15,10 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import org.jetbrains.annotations.Nullable;
 
 public class MovableRockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<BlockPos> {
@@ -39,7 +42,23 @@ public class MovableRockEntity extends BlockEntity implements ExtendedScreenHand
         return new StrengthScreenHandler(syncId, playerInventory, this.pos);
     }
 
+    // Metodo tick che chiameremo dal Block
+    private boolean hasPlayed = false;
+    public void tick() {
+        if (world == null) return;
 
+        Box box = new Box(pos).expand(0.5, 0.5, 0.5);
+        boolean playerInside = !world.getEntitiesByClass(PlayerEntity.class, box, p -> true).isEmpty();
+
+        if (playerInside && !hasPlayed) {
+            for (PlayerEntity player : world.getEntitiesByClass(PlayerEntity.class, box, p -> true)) {
+                world.playSound(null, pos, ModSounds.WALL_BUMP, SoundCategory.BLOCKS, 1.0f, 1.0f);
+            }
+            hasPlayed = true;
+        } else if (!playerInside) {
+            hasPlayed = false;
+        }
+    }
     @Nullable
     @Override
     public Packet<ClientPlayPacketListener> toUpdatePacket() {

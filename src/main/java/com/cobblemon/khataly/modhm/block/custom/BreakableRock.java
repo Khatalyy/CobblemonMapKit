@@ -1,9 +1,13 @@
 package com.cobblemon.khataly.modhm.block.custom;
 
+import com.cobblemon.khataly.modhm.block.entity.ModBlockEntities;
 import com.cobblemon.khataly.modhm.block.entity.custom.BreakableRockEntity;
+import com.cobblemon.khataly.modhm.sound.ModSounds;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
@@ -41,7 +45,7 @@ public class BreakableRock extends BlockWithEntity implements BlockEntityProvide
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!world.isClient) {
-            if(world.getBlockEntity(pos) instanceof BreakableRockEntity breakableRockEntity) {
+            if (world.getBlockEntity(pos) instanceof BreakableRockEntity breakableRockEntity) {
                 player.openHandledScreen(breakableRockEntity);
             }
             return ActionResult.SUCCESS;
@@ -49,10 +53,22 @@ public class BreakableRock extends BlockWithEntity implements BlockEntityProvide
         return ActionResult.FAIL;
     }
 
-
-
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new BreakableRockEntity(pos, state);
     }
+
+    // Attiva il ticking per il BlockEntity così da rilevare collisioni laterali
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        if (world.isClient) return null; // server-side
+        if (type != ModBlockEntities.BREAKABLE_ROCK_BE) return null;
+
+        return (world1, pos, state1, blockEntity) -> {
+            if (blockEntity instanceof BreakableRockEntity rockEntity) {
+                rockEntity.tick();
+            }
+        };
+    }
+
 }

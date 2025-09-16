@@ -1,0 +1,32 @@
+{
+  "breakable_rock": {
+    "subtitles": "sounds.modhm.breakable_rock",
+    "sounds": [
+      "modhm:breakable_rock"
+    ]
+  },
+  "cuttable_tree": {
+    "subtitles": "sounds.modhm.cuttable_tree",
+    "sounds": [
+      "modhm:cuttable_tree"
+    ]
+  },
+  "teleport": {
+    "subtitles": "sounds.modhm.teleport",
+    "sounds": [
+      "modhm:teleport"
+    ]
+  },
+  "wall_bump": {
+    "subtitles": "sounds.modhm.wall_bump",
+    "sounds": [
+      "modhm:wall_bump"
+    ]
+  },
+  "movable_rock": {
+    "subtitles": "sounds.modhm.movable_rock",
+    "sounds": [
+      "modhm:movable_rock"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
-[16:39:01] [main/WARN] (FabricLoader/Knot) Class path entries reference missing files: C:\Users\paolo\Desktop\MinecraftMod\Fabric 1.21.1\fabric-java\build\classes\kotlin\main - the game may not load properly!
-[16:39:01] [main/INFO] (FabricLoader/GameProvider) Loading Minecraft 1.21.1 with Fabric Loader 0.16.14
-[16:39:01] [main/INFO] (FabricLoader) Loading 57 mods:
+[17:46:30] [main/WARN] (FabricLoader/Knot) Class path entries reference missing files: C:\Users\paolo\Desktop\MinecraftMod\Fabric 1.21.1\ModHM\build\classes\kotlin\main - the game may not load properly!
+[17:46:30] [main/INFO] (FabricLoader/GameProvider) Loading Minecraft 1.21.1 with Fabric Loader 0.16.14
+[17:46:31] [main/INFO] (FabricLoader) Loading 57 mods:
 	- cobblemon 1.6.0+1.21.1-HEAD-f77af7c
 	- cobblemon_fabric_mdk 1.0.0-SNAPSHOT
 	- fabric-api 0.116.4+1.21.1
@@ -58,207 +58,217 @@
 	- java 21
 	- minecraft 1.21.1
 	- mixinextras 0.4.1
-[16:39:01] [main/INFO] (FabricLoader/Mixin) SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/C:/Users/paolo/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.15.5+mixin.0.8.7/22f9eb729e216a091673a574a5906dc1b9027fb3/sponge-mixin-0.15.5+mixin.0.8.7.jar Service=Knot/Fabric Env=CLIENT
-[16:39:01] [main/INFO] (FabricLoader/Mixin) Loaded Fabric development mappings for mixin remapper!
-[16:39:01] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_17
-[16:39:01] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_21
-[16:39:02] [main/WARN] (FabricLoader/Mixin) Error loading class: juuxel/adorn/block/variant/BlockVariantSets (java.lang.ClassNotFoundException: juuxel/adorn/block/variant/BlockVariantSets)
-[16:39:02] [main/WARN] (FabricLoader/Mixin) @Mixin target juuxel.adorn.block.variant.BlockVariantSets was not found mixins.cobblemon-common.json:invoker.AdornRegisterInvoker from mod cobblemon
-[16:39:03] [main/INFO] (FabricLoader/MixinExtras|Service) Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.4.1).
-[16:39:04] [Datafixer Bootstrap/INFO] (Minecraft) 226 Datafixer optimizations took 452 milliseconds
-[16:39:10] [Render thread/INFO] (Minecraft) Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
-[16:39:10] [Render thread/INFO] (Minecraft) Setting user: Player639
-[16:39:10] [Render thread/INFO] (Cobblemon) Booting LaxPermissionValidator, permissions will be checked using Minecrafts permission level system, see https://minecraft.fandom.com/wiki/Permission_level
-[16:39:10] [Render thread/INFO] (Cobblemon) Launching Cobblemon 1.6.0-SNAPSHOT 
-[16:39:10] [Render thread/INFO] (Cobblemon)   - Git Commit: f77af7c (https://gitlab.com/cable-mc/cobblemon/-/commit/f77af7c9545cda9f1f60507fd688e2d419654d19)
-[16:39:10] [Render thread/INFO] (Cobblemon)   - Branch: HEAD
-[16:39:11] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:pokemon
-[16:39:11] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:empty_pokeball
-[16:39:11] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:boat
-[16:39:11] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:chest_boat
-[16:39:11] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:poke_bobber
-[16:39:11] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:generic_bedrock
-[16:39:11] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:npc
-[16:39:12] [Render thread/INFO] (Cobblemon) Starting the Best Spawner...
-[16:39:12] [Render thread/INFO] (Cobblemon) Loaded 7 spawning condition types.
-[16:39:12] [Render thread/INFO] (Cobblemon) Loaded 6 spawning context types.
-[16:39:12] [Render thread/INFO] (Cobblemon) Loaded 2 spawn detail types.
-[16:39:12] [Cobblemon Showdown/INFO] (Cobblemon) Starting showdown service...
-[16:39:14] [Cobblemon Showdown/INFO] (Cobblemon) Showdown has been started!
-[16:39:14] [Render thread/INFO] (Cobblemon) Note: Cobblemon data registries are only loaded once per server instance as Pokémon species are not safe to reload.
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:molang registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species_features registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:global_species_features registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species_feature_assignments registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:action_effects registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:moves registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:abilities registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:brain_presets registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species_additions registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:pokeballs registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:properties_tab_completion registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:spawn_detail_presets registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:spawn_rules registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:mechanics registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:bag_items registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dialogues registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:natural_materials registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:fossils registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:npc_preset registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:npc registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dex_entries registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dex_entry_additions registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dexes registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dex_additions registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:flows registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:spawn_pool_world registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:pokerods registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:berries registry
-[16:39:14] [Render thread/INFO] (Cobblemon) Registered the cobblemon:fishing_baits registry
-[16:39:14] [Render thread/INFO] (Minecraft) [STDOUT]: [FlyTargetManager] No flytargets.json file found, starting with empty list.
-[16:39:14] [Render thread/INFO] (modhm) Registering Screen Handlers for modhm
-[16:39:14] [Render thread/INFO] (modhm) Registering Block Entities for modhm
-[16:39:14] [Render thread/INFO] (modhm) Registering Mod Items for modhm
-[16:39:14] [Render thread/INFO] (modhm) Registering Mod Blocks for modhm
-[16:39:14] [Render thread/INFO] (modhm) Registering Item Groups for: modhm
-[16:39:14] [Render thread/INFO] (modhm) Hello Fabric world!
-[16:39:14] [Render thread/INFO] (Cobblemon) Initializing Cobblemon client
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering Pokémon renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering PokéBall renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering Boat renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering Boat with Chest renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering Generic Bedrock renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering Generic Bedrock Entity renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering PokeRod Bobber renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering NPC renderer
-[16:39:14] [Render thread/INFO] (Cobblemon) Registering custom BuiltinItemRenderers
-[16:39:14] [Render thread/INFO] (Indigo) [Indigo] Registering Indigo renderer!
-[16:39:15] [Render thread/INFO] (Minecraft) Backend library: LWJGL version 3.3.3-snapshot
-[16:39:16] [Render thread/INFO] (Minecraft) Reloading ResourceManager: vanilla, fabric, cobblemon, cobblemon_fabric_mdk, fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-view-api-v2, fabric-blockrenderlayer-v1, fabric-client-tags-api-v1, fabric-command-api-v1, fabric-command-api-v2, fabric-commands-v0, fabric-content-registries-v0, fabric-convention-tags-v1, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-gametest-api-v1, fabric-item-api-v1, fabric-item-group-api-v1, fabric-key-binding-api-v1, fabric-keybindings-v0, fabric-language-kotlin, fabric-lifecycle-events-v1, fabric-loot-api-v2, fabric-loot-api-v3, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-renderer-registries-v1, fabric-rendering-data-attachment-v1, fabric-rendering-fluids-v1, fabric-rendering-v0, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-screen-api-v1, fabric-screen-handler-api-v1, fabric-sound-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, cobblemon:gyaradosjump, cobblemon:regionbiasforms
-[16:39:16] [Worker-Main-13/INFO] (Minecraft) Found unifont_all_no_pua-15.1.05.hex, loading
-[16:39:16] [Worker-Main-14/INFO] (Minecraft) Found unifont_jp_patch-15.1.05.hex, loading
-[16:39:16] [Worker-Main-10/WARN] (Minecraft) Texture cobblemon:block/razz_sprout with size 8x4 limits mip level from 4 to 2
-[16:39:16] [Worker-Main-10/WARN] (Minecraft) minecraft:textures/atlas/blocks.png: dropping miplevel from 4 to 2, because of minimum power of two: 4
-[16:39:18] [Render thread/WARN] (Minecraft) Missing sound for event: minecraft:item.goat_horn.play
-[16:39:18] [Render thread/WARN] (Minecraft) Missing sound for event: minecraft:entity.goat.screaming.horn_break
-[16:39:18] [Render thread/INFO] (Minecraft) OpenAL initialized on device OpenAL Soft on Altoparlanti (JBL Quantum Duo)
-[16:39:18] [Render thread/INFO] (Minecraft) Sound engine started
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 1024x1024x2 minecraft:textures/atlas/blocks.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 256x256x4 minecraft:textures/atlas/signs.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 512x512x4 minecraft:textures/atlas/banner_patterns.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 512x512x4 minecraft:textures/atlas/shield_patterns.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 2048x1024x4 minecraft:textures/atlas/armor_trims.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 256x256x4 minecraft:textures/atlas/chest.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 128x128x4 minecraft:textures/atlas/decorated_pot.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 512x256x4 minecraft:textures/atlas/beds.png-atlas
-[16:39:18] [Render thread/INFO] (Minecraft) Created: 512x256x4 minecraft:textures/atlas/shulker_boxes.png-atlas
-[16:39:19] [Render thread/INFO] (Minecraft) Created: 2048x2048x0 minecraft:textures/atlas/particles.png-atlas
-[16:39:19] [Render thread/WARN] (Minecraft) Missing particle sprites: cobblemon:shiny_sparkle_rainbow
-[16:39:19] [Render thread/INFO] (Minecraft) Created: 512x256x0 minecraft:textures/atlas/paintings.png-atlas
-[16:39:19] [Render thread/INFO] (Minecraft) Created: 256x128x0 minecraft:textures/atlas/mob_effects.png-atlas
-[16:39:19] [Render thread/INFO] (Minecraft) Created: 64x64x0 minecraft:textures/atlas/map_decorations.png-atlas
-[16:39:19] [Render thread/INFO] (Minecraft) Created: 1024x512x0 minecraft:textures/atlas/gui.png-atlas
-[16:39:19] [Render thread/WARN] (Minecraft) Shader cobblemon:particle_add could not find sampler named Sampler2 in the specified shader program.
-[16:39:19] [Render thread/WARN] (Minecraft) Shader cobblemon:particle_cutout could not find sampler named Sampler2 in the specified shader program.
-[16:39:19] [Render thread/WARN] (Minecraft) Shader rendertype_entity_cutout could not find uniform named IViewRotMat in the specified shader program.
-[16:39:19] [Render thread/WARN] (Minecraft) Shader rendertype_entity_translucent could not find uniform named IViewRotMat in the specified shader program.
-[16:39:19] [Render thread/WARN] (Minecraft) Shader rendertype_entity_translucent_emissive could not find sampler named Sampler2 in the specified shader program.
-[16:39:19] [Render thread/INFO] (Minecraft) Created: 128x128x0 cobblemon:textures/atlas/berries.png-atlas
-[16:39:19] [Render thread/INFO] (Cobblemon) Loading assets...
-[16:39:19] [Render thread/INFO] (Cobblemon) Loading particle effects...
-[16:39:19] [Render thread/INFO] (Cobblemon) Loaded 607 particle effects
-[16:39:19] [Render thread/INFO] (Cobblemon) Loading animations...
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 5465 animations from 786 animation groups
-[16:39:21] [Render thread/INFO] (Cobblemon) Loading Pokémon assets...
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 856 Pokémon models.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 758 Pokémon posers.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 2022 Pokémon variations.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loading Poké Ball assets...
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 2 Poké Ball models.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 48 Poké Ball posers.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 49 Poké Ball variations.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loading NPC assets...
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 4 NPC models.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 1 NPC posers.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 6 NPC variations.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loading Fossil Pokémon assets...
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 19 Fossil Pokémon models.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 19 Fossil Pokémon posers.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 19 Fossil Pokémon variations.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loading Block Entity assets...
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 1 Block Entity models.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 1 Block Entity posers.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 14 Block Entity variations.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loading Generic assets...
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 1 Generic models.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 1 Generic posers.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 1 Generic variations.
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 71 berry models
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded 5 misc models
-[16:39:21] [Render thread/INFO] (Cobblemon) Loaded assets
-[16:39:21] [Render thread/INFO] (Minecraft) [STDOUT]: [FlyMenuOption] Flag canAddFlyOption resettato
-[16:39:34] [Render thread/INFO] (Minecraft) Loaded 1780 recipes
-[16:39:34] [Render thread/INFO] (Minecraft) Loaded 1923 advancements
-[16:39:34] [Render thread/INFO] (Cobblemon) Loaded 5 server scripts and 1 client scripts
-[16:39:37] [Render thread/INFO] (Cobblemon) Loaded 936 moves
-[16:39:37] [Render thread/INFO] (Cobblemon) Loaded 314 abilities
-[16:39:37] [Render thread/INFO] (Cobblemon) Finished additions
-[16:39:38] [cobblemon Datafixer Bootstrap/INFO] (Minecraft) 2 Datafixer optimizations took 1 milliseconds
-[16:39:39] [Render thread/INFO] (Cobblemon) Imported 259 held item IDs from showdown
-[16:39:39] [Render thread/INFO] (Cobblemon) Loaded 1025 Pokémon species
-[16:39:39] [Render thread/INFO] (Cobblemon) Loaded 25 spawn detail presets.
-[16:39:39] [Render thread/INFO] (Cobblemon) Starting dummy Showdown battle to force it to pre-load data.
-[16:39:39] [Render thread/INFO] (Cobblemon) Loaded 15 fossils
-[16:39:39] [Render thread/ERROR] (ModNioResourcePack) Invalid path in mod resource-pack cobblemon: cobblemon:dex_entry_additions/README.md, ignoring
-[16:39:39] [Render thread/ERROR] (ModNioResourcePack) Invalid path in mod resource-pack cobblemon: cobblemon:dex_additions/README.md, ignoring
-[16:39:39] [Render thread/INFO] (Cobblemon) Loaded 1 flows and 0 client flows
-[16:39:40] [Render thread/INFO] (Cobblemon) Loaded 69 berries
-[16:39:40] [Render thread/INFO] (BiomeModificationImpl) Applied 541 biome modifications to 64 of 64 new biomes in 14.52 ms
-[16:39:40] [Server thread/INFO] (Minecraft) Starting integrated minecraft server version 1.21.1
-[16:39:40] [Server thread/INFO] (Minecraft) Generating keypair
-[16:39:41] [Server thread/INFO] (Minecraft) Preparing start region for dimension minecraft:overworld
-[16:39:42] [Render thread/INFO] (Minecraft) Preparing spawn area: 0%
-[16:39:42] [Render thread/INFO] (Minecraft) Time elapsed: 663 ms
-[16:39:42] [Server thread/INFO] (Minecraft) Changing view distance to 12, from 10
-[16:39:42] [Server thread/INFO] (Minecraft) Changing simulation distance to 12, from 0
-[16:39:43] [Server thread/INFO] (Minecraft) Player639[local:E:e47e3849] logged in with entity id 78 at (-0.3528314110439662, 78.0, 19.672304037042192)
-[16:39:43] [Server thread/INFO] (Minecraft) Player639 joined the game
-[16:39:43] [Render thread/INFO] (Minecraft) Loaded 2 advancements
-[16:39:44] [Server thread/INFO] (Minecraft) Saving and pausing game...
-[16:39:44] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
-[16:39:44] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
-[16:39:44] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
-[16:39:51] [Server thread/INFO] (Minecraft) Saving and pausing game...
-[16:39:51] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
-[16:39:51] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
-[16:39:51] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
-[16:39:53] [Server thread/INFO] (Minecraft) Player639 has made the advancement [The World of Cobblemon!]
-[16:39:53] [Render thread/INFO] (Minecraft) [System] [CHAT] Player639 has made the advancement [The World of Cobblemon!]
-[16:39:53] [Render thread/INFO] (Minecraft) Loaded 16 advancements
-[16:39:55] [Server thread/INFO] (Minecraft) [Player639: Player639's Charmander learnt Strength.]
-[16:39:55] [Render thread/INFO] (Minecraft) [System] [CHAT] Player639's Charmander learnt Strength.
-[16:40:06] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 You used Strength!
-[16:40:07] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 You used Strength!
-[16:40:08] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 You used Strength!
-[16:40:10] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 You used Strength!
-[16:40:13] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 You used Strength!
-[16:40:33] [Server thread/INFO] (ModNetworking) Block restored at BlockPos{x=-6, y=78, z=19}
-[16:40:38] [Server thread/INFO] (Minecraft) Saving and pausing game...
-[16:40:38] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
-[16:40:38] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
-[16:40:38] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
-[16:40:38] [Server thread/INFO] (Minecraft) Player639 lost connection: Disconnected
-[16:40:38] [Server thread/INFO] (Minecraft) Player639 left the game
-[16:40:38] [Server thread/INFO] (Minecraft) Stopping singleplayer server as player logged out
-[16:40:38] [Server thread/INFO] (Minecraft) Stopping server
-[16:40:38] [Server thread/INFO] (Minecraft) Saving players
-[16:40:38] [Server thread/INFO] (Minecraft) Saving worlds
-[16:40:39] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
-[16:40:39] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
-[16:40:39] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
-[16:40:39] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (New World): All chunks are saved
-[16:40:39] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM1): All chunks are saved
-[16:40:39] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
-[16:40:39] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage: All dimensions are saved
-[16:40:39] [Render thread/INFO] (Minecraft) Stopping!
+[17:46:31] [main/INFO] (FabricLoader/Mixin) SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/C:/Users/paolo/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.15.5+mixin.0.8.7/22f9eb729e216a091673a574a5906dc1b9027fb3/sponge-mixin-0.15.5+mixin.0.8.7.jar Service=Knot/Fabric Env=CLIENT
+[17:46:31] [main/INFO] (FabricLoader/Mixin) Loaded Fabric development mappings for mixin remapper!
+[17:46:31] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_17
+[17:46:31] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_21
+[17:46:32] [main/WARN] (FabricLoader/Mixin) Error loading class: juuxel/adorn/block/variant/BlockVariantSets (java.lang.ClassNotFoundException: juuxel/adorn/block/variant/BlockVariantSets)
+[17:46:32] [main/WARN] (FabricLoader/Mixin) @Mixin target juuxel.adorn.block.variant.BlockVariantSets was not found mixins.cobblemon-common.json:invoker.AdornRegisterInvoker from mod cobblemon
+[17:46:32] [main/INFO] (FabricLoader/MixinExtras|Service) Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.4.1).
+[17:46:34] [Datafixer Bootstrap/INFO] (Minecraft) 226 Datafixer optimizations took 399 milliseconds
+[17:46:40] [Render thread/INFO] (Minecraft) Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[17:46:40] [Render thread/INFO] (Minecraft) Setting user: Player339
+[17:46:40] [Render thread/INFO] (Minecraft) [STDOUT]: [FlyTargetManager] No flytargets.json file found, starting with empty list.
+[17:46:40] [Render thread/INFO] (modhm) Registering Mod Sounds for modhm
+[17:46:40] [Render thread/INFO] (modhm) Registering Screen Handlers for modhm
+[17:46:40] [Render thread/INFO] (modhm) Registering Block Entities for modhm
+[17:46:40] [Render thread/INFO] (modhm) Registering Mod Items for modhm
+[17:46:40] [Render thread/INFO] (modhm) Registering Mod Blocks for modhm
+[17:46:40] [Render thread/INFO] (modhm) Registering Item Groups for: modhm
+[17:46:40] [Render thread/INFO] (modhm) Hello Fabric world!
+[17:46:40] [Render thread/INFO] (Cobblemon) Booting LaxPermissionValidator, permissions will be checked using Minecrafts permission level system, see https://minecraft.fandom.com/wiki/Permission_level
+[17:46:40] [Render thread/INFO] (Cobblemon) Launching Cobblemon 1.6.0-SNAPSHOT 
+[17:46:40] [Render thread/INFO] (Cobblemon)   - Git Commit: f77af7c (https://gitlab.com/cable-mc/cobblemon/-/commit/f77af7c9545cda9f1f60507fd688e2d419654d19)
+[17:46:40] [Render thread/INFO] (Cobblemon)   - Branch: HEAD
+[17:46:41] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:pokemon
+[17:46:41] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:empty_pokeball
+[17:46:41] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:boat
+[17:46:41] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:chest_boat
+[17:46:41] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:poke_bobber
+[17:46:41] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:generic_bedrock
+[17:46:41] [Render thread/ERROR] (Minecraft) No data fixer registered for cobblemon:npc
+[17:46:42] [Render thread/INFO] (Cobblemon) Starting the Best Spawner...
+[17:46:42] [Render thread/INFO] (Cobblemon) Loaded 7 spawning condition types.
+[17:46:42] [Render thread/INFO] (Cobblemon) Loaded 6 spawning context types.
+[17:46:42] [Render thread/INFO] (Cobblemon) Loaded 2 spawn detail types.
+[17:46:42] [Cobblemon Showdown/INFO] (Cobblemon) Starting showdown service...
+[17:46:44] [Cobblemon Showdown/INFO] (Cobblemon) Showdown has been started!
+[17:46:44] [Render thread/INFO] (Cobblemon) Note: Cobblemon data registries are only loaded once per server instance as Pokémon species are not safe to reload.
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:molang registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species_features registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:global_species_features registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species_feature_assignments registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:action_effects registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:moves registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:abilities registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:brain_presets registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:species_additions registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:pokeballs registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:properties_tab_completion registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:spawn_detail_presets registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:spawn_rules registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:mechanics registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:bag_items registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dialogues registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:natural_materials registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:fossils registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:npc_preset registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:npc registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dex_entries registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dex_entry_additions registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dexes registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:dex_additions registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:flows registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:spawn_pool_world registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:pokerods registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:berries registry
+[17:46:44] [Render thread/INFO] (Cobblemon) Registered the cobblemon:fishing_baits registry
+[17:46:44] [Render thread/INFO] (Indigo) [Indigo] Registering Indigo renderer!
+[17:46:44] [Render thread/INFO] (Cobblemon) Initializing Cobblemon client
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering Pokémon renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering PokéBall renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering Boat renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering Boat with Chest renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering Generic Bedrock renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering Generic Bedrock Entity renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering PokeRod Bobber renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering NPC renderer
+[17:46:45] [Render thread/INFO] (Cobblemon) Registering custom BuiltinItemRenderers
+[17:46:45] [Render thread/INFO] (Minecraft) Backend library: LWJGL version 3.3.3-snapshot
+[17:46:46] [Render thread/INFO] (Minecraft) Reloading ResourceManager: vanilla, fabric, cobblemon, cobblemon_fabric_mdk, fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-view-api-v2, fabric-blockrenderlayer-v1, fabric-client-tags-api-v1, fabric-command-api-v1, fabric-command-api-v2, fabric-commands-v0, fabric-content-registries-v0, fabric-convention-tags-v1, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-gametest-api-v1, fabric-item-api-v1, fabric-item-group-api-v1, fabric-key-binding-api-v1, fabric-keybindings-v0, fabric-language-kotlin, fabric-lifecycle-events-v1, fabric-loot-api-v2, fabric-loot-api-v3, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-renderer-registries-v1, fabric-rendering-data-attachment-v1, fabric-rendering-fluids-v1, fabric-rendering-v0, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-screen-api-v1, fabric-screen-handler-api-v1, fabric-sound-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, cobblemon:gyaradosjump, cobblemon:regionbiasforms
+[17:46:46] [Worker-Main-13/INFO] (Minecraft) Found unifont_all_no_pua-15.1.05.hex, loading
+[17:46:46] [Worker-Main-2/INFO] (Minecraft) Found unifont_jp_patch-15.1.05.hex, loading
+[17:46:46] [Worker-Main-5/WARN] (Minecraft) Texture cobblemon:block/razz_sprout with size 8x4 limits mip level from 4 to 2
+[17:46:46] [Worker-Main-5/WARN] (Minecraft) minecraft:textures/atlas/blocks.png: dropping miplevel from 4 to 2, because of minimum power of two: 4
+[17:46:48] [Render thread/WARN] (Minecraft) Missing sound for event: minecraft:item.goat_horn.play
+[17:46:48] [Render thread/WARN] (Minecraft) Missing sound for event: minecraft:entity.goat.screaming.horn_break
+[17:46:48] [Render thread/INFO] (Minecraft) OpenAL initialized on device OpenAL Soft on Altoparlanti (JBL Quantum Duo)
+[17:46:48] [Render thread/INFO] (Minecraft) Sound engine started
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 1024x1024x2 minecraft:textures/atlas/blocks.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 256x256x4 minecraft:textures/atlas/signs.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 512x512x4 minecraft:textures/atlas/banner_patterns.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 512x512x4 minecraft:textures/atlas/shield_patterns.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 2048x1024x4 minecraft:textures/atlas/armor_trims.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 256x256x4 minecraft:textures/atlas/chest.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 128x128x4 minecraft:textures/atlas/decorated_pot.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 512x256x4 minecraft:textures/atlas/beds.png-atlas
+[17:46:48] [Render thread/INFO] (Minecraft) Created: 512x256x4 minecraft:textures/atlas/shulker_boxes.png-atlas
+[17:46:49] [Render thread/INFO] (Minecraft) Created: 2048x2048x0 minecraft:textures/atlas/particles.png-atlas
+[17:46:49] [Render thread/WARN] (Minecraft) Missing particle sprites: cobblemon:shiny_sparkle_rainbow
+[17:46:49] [Render thread/INFO] (Minecraft) Created: 512x256x0 minecraft:textures/atlas/paintings.png-atlas
+[17:46:49] [Render thread/INFO] (Minecraft) Created: 256x128x0 minecraft:textures/atlas/mob_effects.png-atlas
+[17:46:49] [Render thread/INFO] (Minecraft) Created: 64x64x0 minecraft:textures/atlas/map_decorations.png-atlas
+[17:46:49] [Render thread/INFO] (Minecraft) Created: 1024x512x0 minecraft:textures/atlas/gui.png-atlas
+[17:46:49] [Render thread/WARN] (Minecraft) Shader cobblemon:particle_add could not find sampler named Sampler2 in the specified shader program.
+[17:46:49] [Render thread/WARN] (Minecraft) Shader cobblemon:particle_cutout could not find sampler named Sampler2 in the specified shader program.
+[17:46:49] [Render thread/WARN] (Minecraft) Shader rendertype_entity_cutout could not find uniform named IViewRotMat in the specified shader program.
+[17:46:49] [Render thread/WARN] (Minecraft) Shader rendertype_entity_translucent could not find uniform named IViewRotMat in the specified shader program.
+[17:46:49] [Render thread/WARN] (Minecraft) Shader rendertype_entity_translucent_emissive could not find sampler named Sampler2 in the specified shader program.
+[17:46:49] [Render thread/INFO] (Minecraft) Created: 128x128x0 cobblemon:textures/atlas/berries.png-atlas
+[17:46:49] [Render thread/INFO] (Cobblemon) Loading assets...
+[17:46:49] [Render thread/INFO] (Cobblemon) Loading particle effects...
+[17:46:49] [Render thread/INFO] (Cobblemon) Loaded 607 particle effects
+[17:46:49] [Render thread/INFO] (Cobblemon) Loading animations...
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 5465 animations from 786 animation groups
+[17:46:51] [Render thread/INFO] (Cobblemon) Loading Pokémon assets...
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 856 Pokémon models.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 758 Pokémon posers.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 2022 Pokémon variations.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loading Poké Ball assets...
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 2 Poké Ball models.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 48 Poké Ball posers.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 49 Poké Ball variations.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loading NPC assets...
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 4 NPC models.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 1 NPC posers.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 6 NPC variations.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loading Fossil Pokémon assets...
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 19 Fossil Pokémon models.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 19 Fossil Pokémon posers.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 19 Fossil Pokémon variations.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loading Block Entity assets...
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 1 Block Entity models.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 1 Block Entity posers.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 14 Block Entity variations.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loading Generic assets...
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 1 Generic models.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 1 Generic posers.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 1 Generic variations.
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 71 berry models
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded 5 misc models
+[17:46:51] [Render thread/INFO] (Cobblemon) Loaded assets
+[17:46:51] [Render thread/INFO] (Minecraft) [STDOUT]: [FlyMenuOption] Flag canAddFlyOption resettato
+[17:47:09] [Render thread/INFO] (Minecraft) Loaded 1780 recipes
+[17:47:09] [Render thread/INFO] (Minecraft) Loaded 1923 advancements
+[17:47:09] [Render thread/INFO] (Cobblemon) Loaded 5 server scripts and 1 client scripts
+[17:47:12] [Render thread/INFO] (Cobblemon) Loaded 936 moves
+[17:47:12] [Render thread/INFO] (Cobblemon) Loaded 314 abilities
+[17:47:12] [Render thread/INFO] (Cobblemon) Finished additions
+[17:47:12] [cobblemon Datafixer Bootstrap/INFO] (Minecraft) 2 Datafixer optimizations took 1 milliseconds
+[17:47:13] [Render thread/INFO] (Cobblemon) Imported 259 held item IDs from showdown
+[17:47:13] [Render thread/INFO] (Cobblemon) Loaded 1025 Pokémon species
+[17:47:13] [Render thread/INFO] (Cobblemon) Loaded 25 spawn detail presets.
+[17:47:13] [Render thread/INFO] (Cobblemon) Starting dummy Showdown battle to force it to pre-load data.
+[17:47:14] [Render thread/INFO] (Cobblemon) Loaded 15 fossils
+[17:47:14] [Render thread/ERROR] (ModNioResourcePack) Invalid path in mod resource-pack cobblemon: cobblemon:dex_entry_additions/README.md, ignoring
+[17:47:14] [Render thread/ERROR] (ModNioResourcePack) Invalid path in mod resource-pack cobblemon: cobblemon:dex_additions/README.md, ignoring
+[17:47:14] [Render thread/INFO] (Cobblemon) Loaded 1 flows and 0 client flows
+[17:47:15] [Render thread/INFO] (Cobblemon) Loaded 69 berries
+[17:47:15] [Render thread/INFO] (BiomeModificationImpl) Applied 541 biome modifications to 64 of 64 new biomes in 15.42 ms
+[17:47:15] [Server thread/INFO] (Minecraft) Starting integrated minecraft server version 1.21.1
+[17:47:15] [Server thread/INFO] (Minecraft) Generating keypair
+[17:47:16] [Server thread/INFO] (Minecraft) Preparing start region for dimension minecraft:overworld
+[17:47:17] [Render thread/INFO] (Minecraft) Preparing spawn area: 0%
+[17:47:17] [Render thread/INFO] (Minecraft) Time elapsed: 533 ms
+[17:47:17] [Server thread/INFO] (Minecraft) Changing view distance to 12, from 10
+[17:47:17] [Server thread/INFO] (Minecraft) Changing simulation distance to 12, from 0
+[17:47:18] [Server thread/INFO] (Minecraft) Player339[local:E:5c6168c5] logged in with entity id 66 at (-36.30000001192093, 85.0, 4.456066290290731)
+[17:47:18] [Server thread/INFO] (Minecraft) Player339 joined the game
+[17:47:18] [Render thread/INFO] (Minecraft) Loaded 2 advancements
+[17:47:19] [Server thread/INFO] (Minecraft) Saving and pausing game...
+[17:47:19] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
+[17:47:19] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
+[17:47:19] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
+[17:48:20] [Server thread/INFO] (Minecraft) Saving and pausing game...
+[17:48:20] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
+[17:48:20] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
+[17:48:20] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
+[17:48:21] [Server thread/INFO] (Minecraft) Player339 has made the advancement [The World of Cobblemon!]
+[17:48:21] [Render thread/INFO] (Minecraft) [System] [CHAT] Player339 has made the advancement [The World of Cobblemon!]
+[17:48:21] [Render thread/INFO] (Minecraft) Loaded 16 advancements
+[17:48:25] [Server thread/INFO] (Minecraft) [Player339: Player339's Charmander learnt Strength.]
+[17:48:25] [Render thread/INFO] (Minecraft) [System] [CHAT] Player339's Charmander learnt Strength.
+[17:48:34] [Server thread/INFO] (Minecraft) [Player339: Player339's Charmander learnt Rock Smash.]
+[17:48:34] [Render thread/INFO] (Minecraft) [System] [CHAT] Player339's Charmander learnt Rock Smash.
+[17:48:35] [Server thread/INFO] (Minecraft) [Player339: Player339's Charmander learnt Cut.]
+[17:48:35] [Render thread/INFO] (Minecraft) [System] [CHAT] Player339's Charmander learnt Cut.
+[17:48:56] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 you use Rock Smash!
+[17:48:56] [Server thread/INFO] (ModNetworking) Block removed at BlockPos{x=-38, y=85, z=4}, restore timer started
+[17:49:04] [Server thread/INFO] (ModNetworking) Block removed at BlockPos{x=-37, y=85, z=4}, restore timer started
+[17:49:04] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 you used Cut!
+[17:49:10] [Render thread/INFO] (Minecraft) [System] [CHAT] ❌ No Pokémon in your party knows Strength!
+[17:49:16] [Server thread/INFO] (ModNetworking) Block restored at BlockPos{x=-38, y=85, z=4}
+[17:49:16] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 you used Strength!
+[17:49:18] [Render thread/INFO] (Minecraft) [System] [CHAT] 💥 you used Strength!
+[17:49:22] [Render thread/INFO] (Minecraft) [System] [CHAT] ⛔ Cannot push the block there!
+[17:49:24] [Render thread/INFO] (Minecraft) [System] [CHAT] ⛔ Cannot push the block there!
+[17:49:24] [Server thread/INFO] (ModNetworking) Block restored at BlockPos{x=-37, y=85, z=4}
+[17:49:29] [Server thread/INFO] (Minecraft) Saving and pausing game...
+[17:49:29] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
+[17:49:29] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
+[17:49:29] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
+[17:49:30] [Server thread/INFO] (Minecraft) Player339 lost connection: Disconnected
+[17:49:30] [Server thread/INFO] (Minecraft) Player339 left the game
+[17:49:30] [Server thread/INFO] (Minecraft) Stopping singleplayer server as player logged out
+[17:49:30] [Server thread/INFO] (Minecraft) Stopping server
+[17:49:30] [Server thread/INFO] (Minecraft) Saving players
+[17:49:30] [Server thread/INFO] (Minecraft) Saving worlds
+[17:49:30] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:overworld
+[17:49:30] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_nether
+[17:49:30] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[New World]'/minecraft:the_end
+[17:49:30] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (New World): All chunks are saved
+[17:49:30] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[17:49:30] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[17:49:30] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage: All dimensions are saved
+[17:49:31] [Render thread/INFO] (Minecraft) Stopping!

@@ -1,13 +1,21 @@
 package com.cobblemon.khataly.modhm.block.custom;
 
+import com.cobblemon.khataly.modhm.block.entity.ModBlockEntities;
+import com.cobblemon.khataly.modhm.block.entity.custom.BreakableRockEntity;
 import com.cobblemon.khataly.modhm.block.entity.custom.MovableRockEntity;
+import com.cobblemon.khataly.modhm.sound.ModSounds;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -35,6 +43,18 @@ public class MovableRock extends BlockWithEntity implements BlockEntityProvider 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return SHAPE;
+    }
+
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        if (world.isClient) return null; // server-side
+        if (type != ModBlockEntities.MOVABLE_ROCK) return null;
+
+        return (world1, pos, state1, blockEntity) -> {
+            if (blockEntity instanceof MovableRockEntity movableRockEntity) {
+                movableRockEntity.tick();
+            }
+        };
     }
 
     @Override

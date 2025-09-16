@@ -3,9 +3,9 @@
   "id": "cobblemon_fabric_mdk",
   "version": "${version}",
   "name": "Cobblemon Fabric MDK",
-  "description": "A MDK useful for Fabric Development",
+  "description": "Mod which brings HM functionality into cobblemon world",
   "authors": [
-    "The Cobblemon Team"
+    "Khataly"
   ],
   "license": "MIT License",
   "icon": "assets/modhm/icon.png",

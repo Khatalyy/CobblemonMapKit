@@ -2,6 +2,7 @@ package com.cobblemon.khataly.modhm.networking;
 
 import com.cobblemon.khataly.modhm.config.ModConfig;
 import com.cobblemon.khataly.modhm.networking.packet.*;
+import com.cobblemon.khataly.modhm.sound.ModSounds;
 import com.cobblemon.khataly.modhm.util.PartyUtils;
 import com.cobblemon.mod.common.CobblemonEntities;
 import com.cobblemon.mod.common.api.moves.Moves;
@@ -22,15 +23,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ModNetworking {
@@ -128,12 +125,12 @@ public class ModNetworking {
                     return;
                 }
 
-                player.sendMessage(Text.literal("💥 You use Rock Smash!"), false);
+                player.sendMessage(Text.literal("💥 you used Rock Smash!"), false);
+                player.playSoundToPlayer(ModSounds.BREAKABLE_ROCK,SoundCategory.PLAYERS,1,1);
 
                 player.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
                 blocksToRestore.put(pos, new TimedBlock(originalState, ModConfig.ROCKSMASH_RESPAWN * 20, null));
 
-                player.getWorld().playSound(null, pos, SoundEvents.BLOCK_STONE_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
 
                 player.networkHandler.sendPacket(new ParticleS2CPacket(
                         ParticleTypes.CLOUD,
@@ -202,12 +199,12 @@ public class ModNetworking {
                     return;
                 }
 
-                player.sendMessage(Text.literal("💥 You used Cut!"), false);
+                player.sendMessage(Text.literal("💥 you used Cut!"), false);
+                player.playSoundToPlayer(ModSounds.CUTTABLE_TREE,SoundCategory.PLAYERS,1,1);
 
                 player.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
                 blocksToRestore.put(pos, new TimedBlock(originalState, ModConfig.CUT_RESPAWN * 20, null));
 
-                player.getWorld().playSound(null, pos, SoundEvents.BLOCK_CHERRY_LEAVES_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
 
                 player.networkHandler.sendPacket(new ParticleS2CPacket(
                         ParticleTypes.CHERRY_LEAVES,
@@ -251,11 +248,12 @@ public class ModNetworking {
                 BlockPos targetPos = currentPos.offset(player.getHorizontalFacing());
                 if (!player.getWorld().getBlockState(targetPos).isAir()) {
                     player.sendMessage(Text.literal("⛔ Cannot push the block there!"), false);
+                    player.playSoundToPlayer(ModSounds.WALL_BUMP,SoundCategory.PLAYERS,1,1);
                     return;
                 }
 
-                player.sendMessage(Text.literal("💥 You used Strength!"), false);
-
+                player.sendMessage(Text.literal("💥 you used Strength!"), false);
+                player.playSoundToPlayer(ModSounds.MOVABLE_ROCK,SoundCategory.PLAYERS,1,1);
                 // Rimuovi blocco attuale e aggiorna mappature
                 player.getWorld().setBlockState(currentPos, Blocks.AIR.getDefaultState());
                 currentToOriginal.remove(currentPos);
@@ -274,7 +272,6 @@ public class ModNetworking {
                     blocksToRestore.put(originalPos, tb);
                 }
 
-                player.getWorld().playSound(null, targetPos, SoundEvents.BLOCK_STONE_PLACE, SoundCategory.BLOCKS, 1.0f, 1.0f);
             });
         });
     }
@@ -325,7 +322,7 @@ public class ModNetworking {
                         }
                         // se trovi un blocco solido diverso dalla aria potresti voler fermarti;
                         // qui continuiamo a scendere finché trovi lo stesso blocco o superiamo maxSearch
-                        if (!s.isAir()) {
+                        if(!s.isAir()) {
                             // continua comunque, può essere che sia atterrato su una panca non identica
                         }
                         scan = scan.down();
