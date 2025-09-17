@@ -10,6 +10,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.battles.BattleBuilder;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.cobblemon.mod.common.pokemon.RenderablePokemon;
 import com.cobblemon.mod.common.pokemon.Species;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ModNetworking {
@@ -43,6 +45,7 @@ public class ModNetworking {
         ModConfig.load(); // Carica la configurazione all’avvio
 
         PayloadTypeRegistry.playC2S().register(RockSmashPacketC2S.ID, RockSmashPacketC2S.CODEC);
+        PayloadTypeRegistry.playS2C().register(RockSmashPacketS2C.ID, RockSmashPacketS2C.CODEC);
         PayloadTypeRegistry.playC2S().register(CutPacketC2S.ID, CutPacketC2S.CODEC);
         PayloadTypeRegistry.playC2S().register(StrengthPacketC2S.ID, StrengthPacketC2S.CODEC);
         PayloadTypeRegistry.playC2S().register(FlyPacketC2S.ID, FlyPacketC2S.CODEC);
@@ -203,11 +206,20 @@ public class ModNetworking {
                     return;
                 }
 
+                // Recupera il Pokémon del giocatore che conosce la mossa Rock Smash
+                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "rocksmash");
+                if (renderablePokemon != null) {
+                    ServerPlayNetworking.send(player, new RockSmashPacketS2C(renderablePokemon));
+                }
+
+
                 player.sendMessage(Text.literal("💥 you used Rock Smash!"), false);
                 player.playSoundToPlayer(ModSounds.BREAKABLE_ROCK,SoundCategory.PLAYERS,1,1);
 
                 player.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
                 blocksToRestore.put(pos, new TimedBlock(originalState, ModConfig.ROCKSMASH_RESPAWN * 20, null));
+
+
 
 
                 player.networkHandler.sendPacket(new ParticleS2CPacket(
