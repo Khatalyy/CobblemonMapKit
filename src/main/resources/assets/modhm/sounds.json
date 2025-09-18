@@ -17,6 +17,18 @@
       "modhm:teleport"
     ]
   },
+  "fly": {
+    "subtitles": "sounds.modhm.fly",
+    "sounds": [
+      "modhm:fly"
+    ]
+  },
+  "flash": {
+    "subtitles": "sounds.modhm.flash",
+    "sounds": [
+      "modhm:flash"
+    ]
+  },
   "wall_bump": {
     "subtitles": "sounds.modhm.wall_bump",
     "sounds": [

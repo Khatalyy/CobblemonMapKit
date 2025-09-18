@@ -12,6 +12,8 @@ public class ModSounds {
     public static final SoundEvent MOVABLE_ROCK = registerSoundEvent("movable_rock");
     public static final SoundEvent WALL_BUMP = registerSoundEvent("wall_bump");
     public static final SoundEvent TELEPORT = registerSoundEvent("teleport");
+    public static final SoundEvent FLY = registerSoundEvent("fly");
+    public static final SoundEvent FLASH = registerSoundEvent("flash");
     private static SoundEvent registerSoundEvent(String name) {
         Identifier id = Identifier.of(HMMod.MOD_ID, name);
         return Registry.register(Registries.SOUND_EVENT, id, SoundEvent.of(id));

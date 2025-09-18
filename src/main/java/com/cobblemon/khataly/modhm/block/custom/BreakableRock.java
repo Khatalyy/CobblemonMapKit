@@ -2,7 +2,6 @@ package com.cobblemon.khataly.modhm.block.custom;
 
 import com.cobblemon.khataly.modhm.block.entity.ModBlockEntities;
 import com.cobblemon.khataly.modhm.block.entity.custom.BreakableRockEntity;
-import com.cobblemon.khataly.modhm.sound.ModSounds;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;

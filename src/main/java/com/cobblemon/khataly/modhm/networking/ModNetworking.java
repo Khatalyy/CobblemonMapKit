@@ -128,7 +128,7 @@ public class ModNetworking {
                         player.getYaw(),
                         player.getPitch()
                 );
-
+                player.playSoundToPlayer(ModSounds.TELEPORT,SoundCategory.PLAYERS,1,1);
                 player.sendMessage(Text.literal("✨ Teleported to your spawn point!"), false);
             });
         });
@@ -167,7 +167,7 @@ public class ModNetworking {
                         false,
                         false
                 ));
-
+                player.playSoundToPlayer(ModSounds.FLASH,SoundCategory.PLAYERS,1,1);
                 player.sendMessage(Text.literal("✨ Flash activated! You can see clearly for " + durationSeconds + " seconds."), false);
             });
         });
@@ -233,7 +233,7 @@ public class ModNetworking {
                         player.getYaw(),
                         player.getPitch()
                 );
-
+                player.playSoundToPlayer(ModSounds.FLY,SoundCategory.PLAYERS,1,1);
                 player.sendMessage(Text.literal("🛫 Teleported to " + targetPos.getX() + ", " + targetPos.getY() + ", " + targetPos.getZ()), false);
             });
         });
