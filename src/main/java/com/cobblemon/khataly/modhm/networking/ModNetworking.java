@@ -261,11 +261,7 @@ public class ModNetworking {
                     return;
                 }
 
-                // Recupera il Pokémon del giocatore che conosce la mossa Rock Smash
-                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "rocksmash");
-                if (renderablePokemon != null) {
-                    ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
-                }
+
 
 
                 player.sendMessage(Text.literal("💥 you used Rock Smash!"), false);
@@ -292,6 +288,12 @@ public class ModNetworking {
 
                 if (player.getWorld().random.nextFloat() < ROCK_SMASH_POKEMON_ENCOUNTER_CHANCE) {
                     spawnWildPokemonAttack(player);
+                }else {
+                    // Recupera il Pokémon del giocatore che conosce la mossa Rock Smash
+                    RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "rocksmash");
+                    if (renderablePokemon != null) {
+                        ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
+                    }
                 }
             });
         });
