@@ -1,7 +1,6 @@
 package com.cobblemon.khataly.modhm.command.custom;
 
 import com.cobblemon.khataly.modhm.config.FlyTargetConfig;
-import com.cobblemon.khataly.modhm.util.PartyUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.server.command.CommandManager;
@@ -13,6 +12,7 @@ import net.minecraft.util.math.BlockPos;
 import java.util.Map;
 
 public class FlyTargetCommand {
+
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("flytarget")
                 .requires(source -> source.hasPermissionLevel(2))
@@ -70,50 +70,14 @@ public class FlyTargetCommand {
                                     ServerCommandSource source = context.getSource();
                                     String name = StringArgumentType.getString(context, "name");
 
-                                    var target = FlyTargetConfig.getTarget(name);
-                                    if (target == null) {
+                                    boolean removed = FlyTargetConfig.removeTarget(name);
+                                    if (removed) {
+                                        source.sendMessage(Text.literal("§aFly target '" + name + "' removed."));
+                                        return 1;
+                                    } else {
                                         source.sendMessage(Text.literal("§cFly target '" + name + "' not found."));
                                         return 0;
                                     }
-
-                                    FlyTargetConfig.removeTarget(name);
-                                    source.sendMessage(Text.literal("§aFly target '" + name + "' removed."));
-                                    return 1;
-                                })
-                        )
-                )
-
-                // flytarget teleport <name>
-                .then(CommandManager.literal("teleport")
-                        .then(CommandManager.argument("name", StringArgumentType.word())
-                                .executes(context -> {
-                                    ServerCommandSource source = context.getSource();
-                                    ServerPlayerEntity player = source.getPlayer();
-                                    String name = StringArgumentType.getString(context, "name");
-
-                                    var target = FlyTargetConfig.getTarget(name);
-                                    if (target == null) {
-                                        source.sendMessage(Text.literal("§cFly target '" + name + "' not found."));
-                                        return 0;
-                                    }
-
-                                    if (!PartyUtils.hasMove(player,"fly")) {
-                                        source.sendMessage(Text.literal("§cNo Pokémon in your party knows Fly."));
-                                        return 0;
-                                    }
-
-                                    assert player != null;
-                                    player.teleport(
-                                            player.getServerWorld(),
-                                            target.pos.getX() + 0.5,
-                                            target.pos.getY(),
-                                            target.pos.getZ() + 0.5,
-                                            player.getYaw(),
-                                            player.getPitch()
-                                    );
-
-                                    source.sendMessage(Text.literal("§aTeleported to fly target '" + name + "'."));
-                                    return 1;
                                 })
                         )
                 )

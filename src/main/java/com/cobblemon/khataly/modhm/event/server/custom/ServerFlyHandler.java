@@ -19,7 +19,7 @@ public class ServerFlyHandler {
             ServerPlayerEntity player = event.getPokemon().getOwnerPlayer();
 
             boolean canFly = PartyUtils.pokemonHasMoveToGUI(player,event.getPokemon().getUuid(), "fly");
-            System.out.println("hasmovegui: " + canFly);
+            System.out.println("hasmoveguiFly: " + canFly);
             ServerPlayNetworking.send(player, FlyMenuS2CPacket.fromServerData(event.getPokemon().getUuid(), canFly, targets));
 
             return null;

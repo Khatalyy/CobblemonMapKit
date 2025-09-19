@@ -1,6 +1,6 @@
 package com.cobblemon.khataly.modhm.screen.custom;
 
-import com.cobblemon.khataly.modhm.config.FlyTargetConfig;
+import com.cobblemon.khataly.modhm.networking.packet.FlyMenuS2CPacket;
 import com.cobblemon.khataly.modhm.networking.packet.FlyPacketC2S;
 import com.cobblemon.khataly.modhm.widget.SimpleButton;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -10,22 +10,24 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Map;
+import java.util.List;
 
 public class FlyTargetListScreen extends Screen {
 
-    public FlyTargetListScreen(MutableText title) {
+    private final List<FlyMenuS2CPacket.FlyTargetEntry> targets;
+
+    public FlyTargetListScreen(MutableText title, List<FlyMenuS2CPacket.FlyTargetEntry> targets) {
         super(title);
+        this.targets = targets;
     }
 
     @Override
     protected void init() {
         int y = 40;
-        Map<String, FlyTargetConfig.TargetInfo> targets = FlyTargetConfig.getAllTargets();
 
-        for (Map.Entry<String, FlyTargetConfig.TargetInfo> entry : targets.entrySet()) {
-            String name = entry.getKey();
-            BlockPos pos = entry.getValue().pos;
+        for (FlyMenuS2CPacket.FlyTargetEntry entry : targets) {
+            String name = entry.name();
+            BlockPos pos = entry.pos();
 
             this.addDrawableChild(new SimpleButton(
                     this.width / 2 - 100,
@@ -34,6 +36,7 @@ public class FlyTargetListScreen extends Screen {
                     20,
                     Text.literal(name + " @ " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()),
                     button -> {
+                        // Invia al server la scelta del target
                         ClientPlayNetworking.send(new FlyPacketC2S(pos));
                         MinecraftClient.getInstance().setScreen(null);
                     }

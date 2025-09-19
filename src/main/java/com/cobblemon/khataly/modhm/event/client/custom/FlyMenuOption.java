@@ -1,6 +1,7 @@
 package com.cobblemon.khataly.modhm.event.client.custom;
 
 import com.cobblemon.khataly.modhm.HMMod;
+import com.cobblemon.khataly.modhm.config.FlyTargetConfig;
 import com.cobblemon.khataly.modhm.networking.packet.AnimationHMPacketS2C;
 import com.cobblemon.khataly.modhm.networking.packet.FlyMenuS2CPacket;
 import com.cobblemon.khataly.modhm.screen.custom.AnimationMoveScreen;
@@ -18,11 +19,13 @@ import net.minecraft.util.Identifier;
 import org.joml.Vector3f;
 import kotlin.Unit;
 
+import java.util.List;
+
 public class FlyMenuOption {
 
     // Flag globale lato client: indica se aggiungere Fly alla ruota
     private static boolean canAddFlyOption = false;
-
+    private static List<FlyMenuS2CPacket.FlyTargetEntry> targets;
     public static void register() {
         registerFlyMenuResponse();
         registerGUIEvent();
@@ -34,7 +37,8 @@ public class FlyMenuOption {
         ClientPlayNetworking.registerGlobalReceiver(FlyMenuS2CPacket.ID, (payload, context) -> {
             MinecraftClient mc = MinecraftClient.getInstance();
             mc.execute(() -> {
-                canAddFlyOption = payload.canFly(); // true se il Pokémon può usare Fly
+                canAddFlyOption = payload.canFly();
+                targets = payload.targets();
                 System.out.println("[FlyMenuOption] Flag aggiornato: canAddFlyOption = " + canAddFlyOption);
             });
         });
@@ -60,7 +64,7 @@ public class FlyMenuOption {
                 });
 
                 // Mostra menu Fly
-                mc.execute(() -> mc.setScreen(new FlyTargetListScreen(Text.literal("FLY Menu"))));
+                mc.execute(() -> mc.setScreen(new FlyTargetListScreen(Text.literal("FLY Menu"),targets)));
                 return Unit.INSTANCE;
             };
 

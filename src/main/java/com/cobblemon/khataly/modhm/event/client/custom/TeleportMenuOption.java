@@ -1,9 +1,7 @@
 package com.cobblemon.khataly.modhm.event.client.custom;
 
 import com.cobblemon.khataly.modhm.HMMod;
-import com.cobblemon.khataly.modhm.networking.packet.AnimationHMPacketS2C;
-import com.cobblemon.khataly.modhm.networking.packet.TeleportMenuS2CPacket;
-import com.cobblemon.khataly.modhm.networking.packet.TeleportPacketC2S;
+import com.cobblemon.khataly.modhm.networking.packet.*;
 import com.cobblemon.khataly.modhm.screen.custom.AnimationMoveScreen;
 import com.cobblemon.mod.common.api.Priority;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
@@ -35,7 +33,7 @@ public class TeleportMenuOption {
             MinecraftClient mc = MinecraftClient.getInstance();
             mc.execute(() -> {
                 canAddTeleportOption = payload.canTeleport();
-                System.out.println("[TeleportMenuOption] Flag aggiornato: canAddTeleportOption = " + canAddTeleportOption);
+                System.out.println("[FlashMenuOption] Flag aggiornato: canAddTeleportOption = " + canAddTeleportOption);
             });
         });
     }
@@ -44,33 +42,34 @@ public class TeleportMenuOption {
     private static void registerGUIEvent() {
         EventObservable<PokemonInteractionGUICreationEvent> observable = CobblemonEvents.POKEMON_INTERACTION_GUI_CREATION; observable
                 .subscribe(Priority.NORMAL, event -> {
-            if (!canAddTeleportOption) return null;
+                    if (!canAddTeleportOption) return null;
 
-            Identifier icon = Identifier.of(HMMod.MOD_ID, "textures/gui/teleport/icon_teleport.png");
-            String tooltip = "Teleport";
+                    Identifier icon = Identifier.of(HMMod.MOD_ID, "textures/gui/teleport/icon_teleport.png");
+                    String tooltip = "Teleport";
 
-            kotlin.jvm.functions.Function0<Vector3f> colourFunc = () -> new Vector3f(1f, 1f, 1f);
+                    kotlin.jvm.functions.Function0<Vector3f> colourFunc = () -> new Vector3f(1f, 1f, 1f);
 
-            kotlin.jvm.functions.Function0<Unit> onPressFunc = () -> {
-                MinecraftClient mc = MinecraftClient.getInstance();
-                if (mc.player == null) return Unit.INSTANCE;
+                    kotlin.jvm.functions.Function0<Unit> onPressFunc = () -> {
+                        MinecraftClient mc = MinecraftClient.getInstance();
 
-                // Ricezione animazione dal server
-                ClientPlayNetworking.registerGlobalReceiver(AnimationHMPacketS2C.ID, (payload, context) -> {
-                    mc.execute(() -> mc.setScreen(new AnimationMoveScreen(Text.literal("AnimationMoveScreen"), payload.pokemon())));
+                        // Ricezione animazione dal server
+                        ClientPlayNetworking.registerGlobalReceiver(AnimationHMPacketS2C.ID, (payload, context) -> {
+                            mc.execute(() -> mc.setScreen(new AnimationMoveScreen(Text.literal("AnimationMoveScreen"), payload.pokemon())));
+                        });
+
+                        // Invia pacchetto C2S per Teleport
+                        if (mc.player != null) {
+                            ClientPlayNetworking.send(new TeleportPacketC2S(mc.player.getBlockPos()));
+                        }
+
+                        System.out.println("[TeleportMenuOption] Opzione Teleport premuta!");
+                        return Unit.INSTANCE;
+                    };
+
+                    InteractWheelOption option = new InteractWheelOption(icon, null, tooltip, colourFunc, onPressFunc);
+                    event.addFillingOption(option);
+                    return Unit.INSTANCE;
                 });
-
-                // Invia pacchetto C2S per Teleport
-                ClientPlayNetworking.send(new TeleportPacketC2S(mc.player.getBlockPos()));
-
-                System.out.println("[TeleportMenuOption] Opzione Teleport premuta!");
-                return Unit.INSTANCE;
-            };
-
-            InteractWheelOption option = new InteractWheelOption(icon, null, tooltip, colourFunc, onPressFunc);
-            event.addFillingOption(option);
-            return Unit.INSTANCE;
-        });
     }
 
     /** Resetta il flag quando si chiude la GUI di interazione */
@@ -82,7 +81,7 @@ public class TeleportMenuOption {
                 public void removed() {
                     canAddTeleportOption = false;
                     super.removed();
-                    System.out.println("[TeleportMenuOption] Flag canAddTeleportOption resettato");
+                    System.out.println("[FlashMenuOption] Flag canAddTeleportOption resettato");
                 }
             });
         });

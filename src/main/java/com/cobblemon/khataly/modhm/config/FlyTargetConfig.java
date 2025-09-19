@@ -8,10 +8,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class FlyTargetConfig {
@@ -21,7 +18,6 @@ public class FlyTargetConfig {
 
     private static final Map<String, TargetInfo> targets = new HashMap<>();
 
-    // 🔹 Target effettivo usato in gioco
     public static class TargetInfo {
         public final RegistryKey<World> worldKey;
         public final BlockPos pos;
@@ -32,35 +28,22 @@ public class FlyTargetConfig {
         }
     }
 
-    // 🔹 Struttura JSON
-    private static class ConfigData {
-        List<FlyTargetData> targets = new ArrayList<>();
-    }
-
-    private static class FlyTargetData {
-        String name;
-        String worldKey;
-        int x, y, z;
-
-        FlyTargetData(String name, String worldKey, int x, int y, int z) {
-            this.name = name;
-            this.worldKey = worldKey;
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-    }
-
     // ===========================
     //        API PUBBLICA
     // ===========================
 
     public static boolean addTarget(String name, RegistryKey<World> worldKey, BlockPos pos) {
         String key = name.toLowerCase();
-        if (targets.containsKey(key)) {
-            return false;
-        }
+        if (targets.containsKey(key)) return false;
         targets.put(key, new TargetInfo(worldKey, pos));
+        save();
+        return true;
+    }
+
+    public static boolean removeTarget(String name) {
+        String key = name.toLowerCase();
+        if (!targets.containsKey(key)) return false;
+        targets.remove(key);
         save();
         return true;
     }
@@ -71,14 +54,6 @@ public class FlyTargetConfig {
 
     public static Map<String, TargetInfo> getAllTargets() {
         return Collections.unmodifiableMap(targets);
-    }
-
-    public static boolean removeTarget(String name) {
-        String key = name.toLowerCase();
-        if (!targets.containsKey(key)) return false;
-        targets.remove(key);
-        save();
-        return true;
     }
 
     public static void reload() {
@@ -100,22 +75,17 @@ public class FlyTargetConfig {
             ConfigData data = GSON.fromJson(reader, ConfigData.class);
             reader.close();
 
-            if (data == null || data.targets == null) {
-                save(); // rigenera se corrotto
-                return;
-            }
-
             targets.clear();
-            for (FlyTargetData d : data.targets) {
-                RegistryKey<World> worldKey = RegistryKey.of(RegistryKeys.WORLD, Identifier.of(d.worldKey));
-                BlockPos pos = new BlockPos(d.x, d.y, d.z);
-                targets.put(d.name.toLowerCase(), new TargetInfo(worldKey, pos));
+            if (data != null && data.targets != null) {
+                for (FlyTargetData d : data.targets) {
+                    RegistryKey<World> worldKey = RegistryKey.of(RegistryKeys.WORLD, Identifier.of(d.worldKey));
+                    BlockPos pos = new BlockPos(d.x, d.y, d.z);
+                    targets.put(d.name.toLowerCase(), new TargetInfo(worldKey, pos));
+                }
             }
 
-            System.out.println("[FlyTargetConfig] Loaded " + targets.size() + " fly targets.");
-
+            System.out.println("[FlyTargetConfigServer] Loaded " + targets.size() + " fly targets.");
         } catch (IOException e) {
-            System.err.println("[FlyTargetConfig] Error loading flytargets.json:");
             e.printStackTrace();
         }
     }
@@ -123,29 +93,37 @@ public class FlyTargetConfig {
     public static void save() {
         try {
             CONFIG_FILE.getParentFile().mkdirs();
-
             ConfigData data = new ConfigData();
             for (var entry : targets.entrySet()) {
                 String name = entry.getKey();
                 TargetInfo info = entry.getValue();
-                data.targets.add(new FlyTargetData(
-                        name,
-                        info.worldKey.getValue().toString(),
-                        info.pos.getX(),
-                        info.pos.getY(),
-                        info.pos.getZ()
-                ));
+                data.targets.add(new FlyTargetData(name, info.worldKey.getValue().toString(),
+                        info.pos.getX(), info.pos.getY(), info.pos.getZ()));
             }
 
             FileWriter writer = new FileWriter(CONFIG_FILE);
             GSON.toJson(data, writer);
             writer.close();
-
-            System.out.println("[FlyTargetConfig] Saved " + data.targets.size() + " fly targets.");
-
         } catch (IOException e) {
-            System.err.println("[FlyTargetConfig] Error saving flytargets.json:");
             e.printStackTrace();
+        }
+    }
+
+    private static class ConfigData {
+        List<FlyTargetData> targets = new ArrayList<>();
+    }
+
+    private static class FlyTargetData {
+        String name;
+        String worldKey;
+        int x, y, z;
+
+        FlyTargetData(String name, String worldKey, int x, int y, int z) {
+            this.name = name;
+            this.worldKey = worldKey;
+            this.x = x;
+            this.y = y;
+            this.z = z;
         }
     }
 }

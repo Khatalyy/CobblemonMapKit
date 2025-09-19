@@ -16,7 +16,7 @@ public class ServerFlashHandler {
             ServerPlayerEntity player = event.getPokemon().getOwnerPlayer();
 
             boolean canFlash = PartyUtils.pokemonHasMoveToGUI(player,event.getPokemon().getUuid(), "flash");
-            System.out.println("hasmovegui: " + canFlash);
+            System.out.println("hasmoveguiFlash: " + canFlash);
             ServerPlayNetworking.send(player, FlashMenuS2CPacket.fromServerData(event.getPokemon().getUuid(), canFlash));
 
             return null;
