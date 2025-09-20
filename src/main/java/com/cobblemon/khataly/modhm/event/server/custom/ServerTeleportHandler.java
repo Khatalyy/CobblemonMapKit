@@ -13,6 +13,7 @@ public class ServerTeleportHandler {
 
             // Invia il pacchetto al client
             ServerPlayerEntity player = event.getPokemon().getOwnerPlayer();
+            if (player == null) return null; // NPC
 
             boolean canTeleport = PartyUtils.pokemonHasMoveToGUI(player,event.getPokemon().getUuid(), "teleport");
             System.out.println("hasmoveguiTeleport: " + canTeleport);

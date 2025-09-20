@@ -14,6 +14,7 @@ public class ServerFlashHandler {
 
             // Invia il pacchetto al client
             ServerPlayerEntity player = event.getPokemon().getOwnerPlayer();
+            if (player == null) return null; // NPC
 
             boolean canFlash = PartyUtils.pokemonHasMoveToGUI(player,event.getPokemon().getUuid(), "flash");
             System.out.println("hasmoveguiFlash: " + canFlash);
