@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "modhm:block/climbable_rock" }
+    "facing=north": { "model": "modhm:block/climbable_rock", "y": 0 },
+    "facing=east":  { "model": "modhm:block/climbable_rock", "y": 90 },
+    "facing=south": { "model": "modhm:block/climbable_rock", "y": 180 },
+    "facing=west":  { "model": "modhm:block/climbable_rock", "y": 270 }
   }
 }
