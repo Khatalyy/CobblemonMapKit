@@ -1,7 +1,6 @@
 package com.cobblemon.khataly.modhm.networking;
 
 import com.cobblemon.khataly.modhm.block.ModBlocks;
-import com.cobblemon.khataly.modhm.config.FlyTargetConfig;
 import com.cobblemon.khataly.modhm.config.ModConfig;
 import com.cobblemon.khataly.modhm.networking.packet.*;
 import com.cobblemon.khataly.modhm.sound.ModSounds;
@@ -166,12 +165,7 @@ public class ModNetworking {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Fly!"), false);
                     return;
                 }
-
                 BlockPos targetPos = payload.pos();
-                if (!player.getWorld().isChunkLoaded(targetPos)) {
-                    player.sendMessage(Text.literal("⚠️ The target location is not loaded!"), false);
-                    return;
-                }
                 RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "fly");
                 if (renderablePokemon != null) {
                     ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
