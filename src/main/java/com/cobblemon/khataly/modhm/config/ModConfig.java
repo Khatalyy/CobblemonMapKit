@@ -2,74 +2,169 @@ package com.cobblemon.khataly.modhm.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 
 public class ModConfig {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModConfig.class);
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .serializeNulls()
+            .create();
     private static final File CONFIG_FILE = new File("config/modhm/config.json");
 
+    // Respawn times
     public static int ROCKSMASH_RESPAWN = 60;
     public static int CUT_RESPAWN = 60;
     public static int STRENGTH_RESPAWN = 60;
 
-    // 🔹 Nuova variabile per la durata di Flash/Night Vision
-    public static int FLASH_DURATION = 60; // in secondi
+    // Flash duration
+    public static int FLASH_DURATION = 60;
+
+    // Required Items (item + message in English)
+    public static RequiredItem ROCKSMASH = new RequiredItem("minecraft:iron_pickaxe", "❌ You need an Iron Pickaxe to use Rock Smash!");
+    public static RequiredItem FLY = new RequiredItem(null, "❌ You need a special item to use Fly!");
+    public static RequiredItem CUT = new RequiredItem(null, "❌ You need a knife or machete to use Cut!");
+    public static RequiredItem STRENGTH = new RequiredItem(null, "❌ You need a heavy item to use Strength!");
+    public static RequiredItem FLASH = new RequiredItem(null, "❌ You need a Flash Item to use Flash!");
+    public static RequiredItem TELEPORT = new RequiredItem(null, "❌ You need a Teleport Item to use Teleport!");
+    public static RequiredItem ROCKCLIMB = new RequiredItem(null, "❌ You need climbing gear to use Rock Climb!");
 
     public static void load() {
         try {
             if (!CONFIG_FILE.exists()) {
-                save(); // crea il file con valori di default
+                save();
+                return;
             }
 
+            // Read file as string to check integrity
+            String jsonContent = Files.readString(CONFIG_FILE.toPath());
+
+            // Regenerate if missing any key section
+            if (!jsonContent.contains("\"respawn_time_seconds\"") ||
+                    !jsonContent.contains("\"flash_duration_seconds\"") ||
+                    !jsonContent.contains("\"required_items\"")) {
+
+                LOGGER.warn("⚠️ Config obsolete or corrupted, regenerating with default values.");
+                if (!CONFIG_FILE.delete()) {
+                    LOGGER.error("⚠️ Cannot delete config file: {}", CONFIG_FILE.getAbsolutePath());
+                }
+                save();
+                return;
+            }
+
+            // Deserialize normally
             FileReader reader = new FileReader(CONFIG_FILE);
             ConfigData data = GSON.fromJson(reader, ConfigData.class);
             reader.close();
 
+            // Additional integrity check
+            if (data.required_items == null) {
+                LOGGER.warn("⚠️ RequiredItems missing, regenerating.");
+                if (!CONFIG_FILE.delete()) {
+                    LOGGER.error("⚠️ Cannot delete config file: {}", CONFIG_FILE.getAbsolutePath());
+                }
+                save();
+                return;
+            }
+
+            // Load respawn times
             if (data.respawn_time_seconds != null) {
                 ROCKSMASH_RESPAWN = data.respawn_time_seconds.rocksmash;
                 CUT_RESPAWN = data.respawn_time_seconds.cut;
                 STRENGTH_RESPAWN = data.respawn_time_seconds.strength;
             }
 
-            // Leggi FLASH_DURATION dal file JSON
+            // Load flash duration
             if (data.flash_duration_seconds != null) {
                 FLASH_DURATION = data.flash_duration_seconds;
             }
+
+            // Load required items
+            if (data.required_items.rocksmash != null) ROCKSMASH = data.required_items.rocksmash;
+            if (data.required_items.fly != null) FLY = data.required_items.fly;
+            if (data.required_items.cut != null) CUT = data.required_items.cut;
+            if (data.required_items.strength != null) STRENGTH = data.required_items.strength;
+            if (data.required_items.flash != null) FLASH = data.required_items.flash;
+            if (data.required_items.teleport != null) TELEPORT = data.required_items.teleport;
+            if (data.required_items.rockclimb != null) ROCKCLIMB = data.required_items.rockclimb;
+
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Error loading configuration file", e);
         }
     }
 
     public static void save() {
         try {
-            CONFIG_FILE.getParentFile().mkdirs();
+            File parent = CONFIG_FILE.getParentFile();
+            if (parent != null && !parent.exists()) {
+                if (!parent.mkdirs()) {
+                    LOGGER.warn("⚠️ Cannot create configuration directory: {}", parent.getAbsolutePath());
+                }
+            }
+
             ConfigData data = new ConfigData();
+
             data.respawn_time_seconds.rocksmash = ROCKSMASH_RESPAWN;
             data.respawn_time_seconds.cut = CUT_RESPAWN;
             data.respawn_time_seconds.strength = STRENGTH_RESPAWN;
-            data.flash_duration_seconds = FLASH_DURATION; // salva durata Flash/Night Vision
+            data.flash_duration_seconds = FLASH_DURATION;
+
+            data.required_items.rocksmash = ROCKSMASH;
+            data.required_items.fly = FLY;
+            data.required_items.cut = CUT;
+            data.required_items.strength = STRENGTH;
+            data.required_items.flash = FLASH;
+            data.required_items.teleport = TELEPORT;
+            data.required_items.rockclimb = ROCKCLIMB;
 
             FileWriter writer = new FileWriter(CONFIG_FILE);
             GSON.toJson(data, writer);
             writer.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Error saving configuration file", e);
         }
     }
 
+    // --- Internal classes for JSON ---
     private static class ConfigData {
         RespawnTimes respawn_time_seconds = new RespawnTimes();
-        Integer flash_duration_seconds = 60; // default
+        Integer flash_duration_seconds = FLASH_DURATION;
+        RequiredItems required_items = new RequiredItems();
     }
 
     private static class RespawnTimes {
-        int rocksmash = 60;
-        int cut = 60;
-        int strength = 60;
+        int rocksmash = ROCKSMASH_RESPAWN;
+        int cut = CUT_RESPAWN;
+        int strength = STRENGTH_RESPAWN;
+    }
+
+    public static class RequiredItem {
+        public String item;
+        public String message;
+
+        public RequiredItem() {}
+
+        public RequiredItem(String item, String message) {
+            this.item = item;
+            this.message = message;
+        }
+    }
+
+    private static class RequiredItems {
+        RequiredItem rocksmash = ROCKSMASH;
+        RequiredItem fly = FLY;
+        RequiredItem cut = CUT;
+        RequiredItem strength = STRENGTH;
+        RequiredItem flash = FLASH;
+        RequiredItem teleport = TELEPORT;
+        RequiredItem rockclimb = ROCKCLIMB;
     }
 }

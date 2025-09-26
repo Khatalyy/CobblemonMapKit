@@ -5,7 +5,7 @@ import com.cobblemon.khataly.modhm.block.custom.ClimbableRock;
 import com.cobblemon.khataly.modhm.config.ModConfig;
 import com.cobblemon.khataly.modhm.networking.packet.*;
 import com.cobblemon.khataly.modhm.sound.ModSounds;
-import com.cobblemon.khataly.modhm.util.PartyUtils;
+import com.cobblemon.khataly.modhm.util.PlayerUtils;
 import com.cobblemon.mod.common.CobblemonEntities;
 import com.cobblemon.mod.common.api.moves.Moves;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
@@ -84,11 +84,17 @@ public class ModNetworking {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
                 // Controlla che abbia un Pokémon che conosce Teleport
-                if (!PartyUtils.hasMove(player,"teleport")) {
+                if (!PlayerUtils.hasMove(player,"teleport")) {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Teleport!"), false);
                     return;
                 }
-                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "teleport");
+                if (ModConfig.TELEPORT.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.TELEPORT.item)) {
+                    // usa il messaggio personalizzato
+                    player.sendMessage(Text.literal(ModConfig.TELEPORT.message), false);
+                    return;
+                }
+                RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, "teleport");
                 if (renderablePokemon != null) {
                     ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
                 }
@@ -127,8 +133,14 @@ public class ModNetworking {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
                 // 🔹 Verifica se ha un Pokémon con Flash
-                if (!PartyUtils.hasMove(player,"flash")) {
+                if (!PlayerUtils.hasMove(player,"flash")) {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Flash!"), false);
+                    return;
+                }
+                if (ModConfig.FLASH.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.FLASH.item)) {
+                    // usa il messaggio personalizzato
+                    player.sendMessage(Text.literal(ModConfig.FLASH.message), false);
                     return;
                 }
 
@@ -139,7 +151,7 @@ public class ModNetworking {
                 }
 
                 // Mostra animazione
-                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "flash");
+                RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, "flash");
                 if (renderablePokemon != null) {
                     ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
                 }
@@ -165,12 +177,18 @@ public class ModNetworking {
         ServerPlayNetworking.registerGlobalReceiver(FlyPacketC2S.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
-                if (!PartyUtils.hasMove(player,"fly")) {
+                if (!PlayerUtils.hasMove(player,"fly")) {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Fly!"), false);
                     return;
                 }
+                if (ModConfig.FLY.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.FLY.item)) {
+                    // usa il messaggio personalizzato
+                    player.sendMessage(Text.literal(ModConfig.FLY.message), false);
+                    return;
+                }
                 BlockPos targetPos = payload.pos();
-                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "fly");
+                RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, "fly");
                 if (renderablePokemon != null) {
                     ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
                 }
@@ -199,11 +217,16 @@ public class ModNetworking {
         ServerPlayNetworking.registerGlobalReceiver(RockClimbPacketC2S.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
-                if (!PartyUtils.hasMove(player, "rockclimb")) {
+                if (!PlayerUtils.hasMove(player, "rockclimb")) {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Rock Climb!"), false);
                     return;
                 }
-
+                if (ModConfig.ROCKCLIMB.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.ROCKCLIMB.item)) {
+                    // usa il messaggio personalizzato
+                    player.sendMessage(Text.literal(ModConfig.ROCKCLIMB.message), false);
+                    return;
+                }
                 BlockPos startPos = payload.pos();
                 BlockState startState = player.getWorld().getBlockState(startPos);
                 if (startState.isAir() || !startState.isOf(ModBlocks.CLIMBABLE_ROCK)) {
@@ -212,7 +235,7 @@ public class ModNetworking {
                 }
 
                 // Animazione Pokémon
-                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "rockclimb");
+                RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, "rockclimb");
                 if (renderablePokemon != null) {
                     ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
                 }
@@ -233,8 +256,14 @@ public class ModNetworking {
             context.server().execute(() -> {
                 BlockPos pos = payload.pos();
 
-                if (!PartyUtils.hasMove(player,"rocksmash")) {
+                if (!PlayerUtils.hasMove(player,"rocksmash")) {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Rock Smash!"), false);
+                    return;
+                }
+                if (ModConfig.ROCKSMASH.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.ROCKSMASH.item)) {
+                    // usa il messaggio personalizzato
+                    player.sendMessage(Text.literal(ModConfig.ROCKSMASH.message), false);
                     return;
                 }
 
@@ -278,7 +307,7 @@ public class ModNetworking {
                     spawnWildPokemonAttack(player);
                 }else {
                     // Recupera il Pokémon del giocatore che conosce la mossa Rock Smash
-                    RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "rocksmash");
+                    RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, "rocksmash");
                     if (renderablePokemon != null) {
                         ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
                     }
@@ -318,8 +347,14 @@ public class ModNetworking {
             context.server().execute(() -> {
                 BlockPos pos = payload.pos();
 
-                if (!PartyUtils.hasMove(player,"cut")) {
+                if (!PlayerUtils.hasMove(player,"cut")) {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Cut!"), false);
+                    return;
+                }
+                if (ModConfig.CUT.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.CUT.item)) {
+                    // usa il messaggio personalizzato
+                    player.sendMessage(Text.literal(ModConfig.CUT.message), false);
                     return;
                 }
 
@@ -334,7 +369,7 @@ public class ModNetworking {
                     return;
                 }
 
-                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "cut");
+                RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, "cut");
                 if (renderablePokemon != null) {
                     ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
                 }
@@ -367,10 +402,17 @@ public class ModNetworking {
             context.server().execute(() -> {
                 BlockPos clickedPos = payload.pos();
 
-                if (!PartyUtils.hasMove(player,"strength")) {
+                if (!PlayerUtils.hasMove(player,"strength")) {
                     player.sendMessage(Text.literal("❌ No Pokémon in your party knows Strength!"), false);
                     return;
                 }
+                if (ModConfig.STRENGTH.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.STRENGTH.item)) {
+                    // usa il messaggio personalizzato
+                    player.sendMessage(Text.literal(ModConfig.STRENGTH.message), false);
+                    return;
+                }
+
 
                 BlockPos originalPos = currentToOriginal.getOrDefault(clickedPos, clickedPos);
                 TimedBlock timedBlock = blocksToRestore.get(originalPos);
@@ -391,7 +433,7 @@ public class ModNetworking {
                     return;
                 }
 
-                RenderablePokemon renderablePokemon = PartyUtils.getRenderPokemonByMove(player, "strength");
+                RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, "strength");
                 if (renderablePokemon != null) {
                     ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
                 }

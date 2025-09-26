@@ -1,7 +1,7 @@
 package com.cobblemon.khataly.modhm.event.server.custom;
 
 import com.cobblemon.khataly.modhm.networking.packet.FlashMenuS2CPacket;
-import com.cobblemon.khataly.modhm.util.PartyUtils;
+import com.cobblemon.khataly.modhm.util.PlayerUtils;
 import com.cobblemon.mod.common.api.Priority;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -16,7 +16,7 @@ public class ServerFlashHandler {
             ServerPlayerEntity player = event.getPokemon().getOwnerPlayer();
             if (player == null) return null; // NPC
 
-            boolean canFlash = PartyUtils.pokemonHasMoveToGUI(player,event.getPokemon().getUuid(), "flash");
+            boolean canFlash = PlayerUtils.pokemonHasMoveToGUI(player,event.getPokemon().getUuid(), "flash");
             System.out.println("hasmoveguiFlash: " + canFlash);
             ServerPlayNetworking.send(player, FlashMenuS2CPacket.fromServerData(event.getPokemon().getUuid(), canFlash));
 
