@@ -20,15 +20,15 @@ public class ModConfig {
             .create();
     private static final File CONFIG_FILE = new File("config/modhm/config.json");
 
-    // Respawn times
+    // --- Respawn times ---
     public static int ROCKSMASH_RESPAWN = 60;
     public static int CUT_RESPAWN = 60;
     public static int STRENGTH_RESPAWN = 60;
 
-    // Flash duration
+    // --- Flash duration ---
     public static int FLASH_DURATION = 60;
 
-    // Required Items (item + message in English)
+    // --- Required Items ---
     public static RequiredItem ROCKSMASH = new RequiredItem("minecraft:iron_pickaxe", "❌ You need an Iron Pickaxe to use Rock Smash!");
     public static RequiredItem FLY = new RequiredItem(null, "❌ You need a special item to use Fly!");
     public static RequiredItem CUT = new RequiredItem(null, "❌ You need a knife or machete to use Cut!");
@@ -36,7 +36,12 @@ public class ModConfig {
     public static RequiredItem FLASH = new RequiredItem(null, "❌ You need a Flash Item to use Flash!");
     public static RequiredItem TELEPORT = new RequiredItem(null, "❌ You need a Teleport Item to use Teleport!");
     public static RequiredItem ROCKCLIMB = new RequiredItem(null, "❌ You need climbing gear to use Rock Climb!");
+    public static RequiredItem ULTRAHOLE = new RequiredItem(null, "❌ You need Ultrabeast to summon a Ultra Hole!");
 
+    // --- UltraHole settings ---
+    public static UltraHoleSettings ULTRAHOLE_SETTINGS = new UltraHoleSettings("minecraft:the_end", 0, 100, 0); // default dimension and coordinates
+
+    // --- Load config from JSON ---
     public static void load() {
         try {
             if (!CONFIG_FILE.exists()) {
@@ -44,33 +49,38 @@ public class ModConfig {
                 return;
             }
 
-            // Read file as string to check integrity
             String jsonContent = Files.readString(CONFIG_FILE.toPath());
 
-            // Regenerate if missing any key section
             if (!jsonContent.contains("\"respawn_time_seconds\"") ||
                     !jsonContent.contains("\"flash_duration_seconds\"") ||
-                    !jsonContent.contains("\"required_items\"")) {
+                    !jsonContent.contains("\"required_items\"") ||
+                    !jsonContent.contains("\"ultrahole_settings\"")) {
 
                 LOGGER.warn("⚠️ Config obsolete or corrupted, regenerating with default values.");
-                if (!CONFIG_FILE.delete()) {
-                    LOGGER.error("⚠️ Cannot delete config file: {}", CONFIG_FILE.getAbsolutePath());
-                }
+                if (!CONFIG_FILE.delete()) LOGGER.error("⚠️ Cannot delete config file: {}", CONFIG_FILE.getAbsolutePath());
                 save();
                 return;
             }
 
-            // Deserialize normally
             FileReader reader = new FileReader(CONFIG_FILE);
             ConfigData data = GSON.fromJson(reader, ConfigData.class);
             reader.close();
 
-            // Additional integrity check
-            if (data.required_items == null) {
-                LOGGER.warn("⚠️ RequiredItems missing, regenerating.");
-                if (!CONFIG_FILE.delete()) {
-                    LOGGER.error("⚠️ Cannot delete config file: {}", CONFIG_FILE.getAbsolutePath());
-                }
+            boolean missingItem = data.required_items == null
+                    || data.required_items.rocksmash == null
+                    || data.required_items.fly == null
+                    || data.required_items.cut == null
+                    || data.required_items.strength == null
+                    || data.required_items.flash == null
+                    || data.required_items.teleport == null
+                    || data.required_items.rockclimb == null
+                    || data.required_items.ultrahole == null
+                    || data.ultrahole_settings == null
+                    || data.ultrahole_settings.destinationDimension == null;
+
+            if (missingItem) {
+                LOGGER.warn("⚠️ One or more RequiredItems or UltraHole settings missing, regenerating config.");
+                if (!CONFIG_FILE.delete()) LOGGER.error("⚠️ Cannot delete config file: {}", CONFIG_FILE.getAbsolutePath());
                 save();
                 return;
             }
@@ -83,31 +93,32 @@ public class ModConfig {
             }
 
             // Load flash duration
-            if (data.flash_duration_seconds != null) {
-                FLASH_DURATION = data.flash_duration_seconds;
-            }
+            if (data.flash_duration_seconds != null) FLASH_DURATION = data.flash_duration_seconds;
 
             // Load required items
-            if (data.required_items.rocksmash != null) ROCKSMASH = data.required_items.rocksmash;
-            if (data.required_items.fly != null) FLY = data.required_items.fly;
-            if (data.required_items.cut != null) CUT = data.required_items.cut;
-            if (data.required_items.strength != null) STRENGTH = data.required_items.strength;
-            if (data.required_items.flash != null) FLASH = data.required_items.flash;
-            if (data.required_items.teleport != null) TELEPORT = data.required_items.teleport;
-            if (data.required_items.rockclimb != null) ROCKCLIMB = data.required_items.rockclimb;
+            ROCKSMASH = data.required_items.rocksmash;
+            FLY = data.required_items.fly;
+            CUT = data.required_items.cut;
+            STRENGTH = data.required_items.strength;
+            FLASH = data.required_items.flash;
+            TELEPORT = data.required_items.teleport;
+            ROCKCLIMB = data.required_items.rockclimb;
+            ULTRAHOLE = data.required_items.ultrahole;
+
+            // Load UltraHole settings
+            ULTRAHOLE_SETTINGS = data.ultrahole_settings;
 
         } catch (IOException e) {
             LOGGER.error("Error loading configuration file", e);
         }
     }
 
+    // --- Save config to JSON ---
     public static void save() {
         try {
             File parent = CONFIG_FILE.getParentFile();
-            if (parent != null && !parent.exists()) {
-                if (!parent.mkdirs()) {
-                    LOGGER.warn("⚠️ Cannot create configuration directory: {}", parent.getAbsolutePath());
-                }
+            if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                LOGGER.warn("⚠️ Cannot create configuration directory: {}", parent.getAbsolutePath());
             }
 
             ConfigData data = new ConfigData();
@@ -124,6 +135,9 @@ public class ModConfig {
             data.required_items.flash = FLASH;
             data.required_items.teleport = TELEPORT;
             data.required_items.rockclimb = ROCKCLIMB;
+            data.required_items.ultrahole = ULTRAHOLE;
+
+            data.ultrahole_settings = ULTRAHOLE_SETTINGS;
 
             FileWriter writer = new FileWriter(CONFIG_FILE);
             GSON.toJson(data, writer);
@@ -138,6 +152,7 @@ public class ModConfig {
         RespawnTimes respawn_time_seconds = new RespawnTimes();
         Integer flash_duration_seconds = FLASH_DURATION;
         RequiredItems required_items = new RequiredItems();
+        UltraHoleSettings ultrahole_settings = new UltraHoleSettings();
     }
 
     private static class RespawnTimes {
@@ -151,20 +166,39 @@ public class ModConfig {
         public String message;
 
         public RequiredItem() {}
-
-        public RequiredItem(String item, String message) {
-            this.item = item;
-            this.message = message;
-        }
+        public RequiredItem(String item, String message) { this.item = item; this.message = message; }
     }
 
     private static class RequiredItems {
-        RequiredItem rocksmash = ROCKSMASH;
-        RequiredItem fly = FLY;
-        RequiredItem cut = CUT;
-        RequiredItem strength = STRENGTH;
-        RequiredItem flash = FLASH;
-        RequiredItem teleport = TELEPORT;
-        RequiredItem rockclimb = ROCKCLIMB;
+        RequiredItem rocksmash = null;
+        RequiredItem fly = null;
+        RequiredItem cut = null;
+        RequiredItem strength = null;
+        RequiredItem flash = null;
+        RequiredItem teleport = null;
+        RequiredItem rockclimb = null;
+        RequiredItem ultrahole = null;
+    }
+
+    // --- UltraHole settings with coordinates ---
+    public static class UltraHoleSettings {
+        public String destinationDimension; // dimension ID completo
+        public double x; // coordinata X
+        public double y; // coordinata Y
+        public double z; // coordinata Z
+
+        public UltraHoleSettings() {
+            this.destinationDimension = "minecraft:the_end";
+            this.x = 0;
+            this.y = 100;
+            this.z = 0;
+        }
+
+        public UltraHoleSettings(String destinationDimension, double x, double y, double z) {
+            this.destinationDimension = destinationDimension;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
     }
 }

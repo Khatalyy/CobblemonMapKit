@@ -22,20 +22,21 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ModNetworking {
@@ -66,6 +67,10 @@ public class ModNetworking {
         PayloadTypeRegistry.playC2S().register(TeleportMenuC2SPacket.ID, TeleportMenuC2SPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(TeleportMenuS2CPacket.ID, TeleportMenuS2CPacket.CODEC);
 
+        PayloadTypeRegistry.playC2S().register(UltraHolePacketC2S.ID, UltraHolePacketC2S.CODEC);
+        PayloadTypeRegistry.playC2S().register(UltraHoleMenuC2SPacket.ID, UltraHoleMenuC2SPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(UltraHoleMenuS2CPacket.ID, UltraHoleMenuS2CPacket.CODEC);
+
         registerC2SPackets();
     }
 
@@ -77,7 +82,72 @@ public class ModNetworking {
         registerFlyHandler();
         registerTeleportHandler();
         registerFlashHandler();
+        registerUltraHoleHandler();
     }
+
+    private static void registerUltraHoleHandler() {
+        ServerPlayNetworking.registerGlobalReceiver(UltraHolePacketC2S.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            context.server().execute(() -> {
+
+                // Lista delle mosse richieste per usare UltraHole
+                List<String> ultraHoleMoves = List.of("sunsteelstrike", "moongeistbeam");
+                List<String> knownMoves = ultraHoleMoves.stream()
+                        .filter(move -> PlayerUtils.hasMove(player, move))
+                        .toList();
+
+                if (knownMoves.isEmpty()) {
+                    player.sendMessage(Text.literal("❌ None of your Pokémon know the moves required to open an UltraHole!"), false);
+                    player.sendMessage(Text.literal("Required moves: Sunsteel Strike or Moongeist Beam"), false);
+                    return;
+                }
+
+                if (ModConfig.ULTRAHOLE.item != null &&
+                        !PlayerUtils.hasRequiredItem(player, ModConfig.ULTRAHOLE.item)) {
+                    player.sendMessage(Text.literal(ModConfig.ULTRAHOLE.message), false);
+                    return;
+                }
+
+                // --- Determina la dimensione di destinazione ---
+                String destDimensionId = ModConfig.ULTRAHOLE_SETTINGS.destinationDimension;
+
+                // Se il giocatore è già nella destinazione, torna nell'Overworld
+                if (player.getWorld().getRegistryKey().getValue().toString().equals(destDimensionId)) {
+                    destDimensionId = "minecraft:overworld";
+                }
+
+                Identifier dimIdentifier = Identifier.tryParse(destDimensionId);
+                if (dimIdentifier == null) {
+                    player.sendMessage(Text.literal("❌ Invalid dimension ID in config!"), false);
+                    return;
+                }
+
+                RegistryKey<World> targetWorldKey = RegistryKey.of(RegistryKeys.WORLD, dimIdentifier);
+                ServerWorld targetWorld = Objects.requireNonNull(player.getServer()).getWorld(targetWorldKey);
+                if (targetWorld == null) {
+                    player.sendMessage(Text.literal("❌ Target dimension not found!"), false);
+                    return;
+                }
+
+                // Prendi la prima mossa valida
+                String chosenMove = knownMoves.getFirst();
+                RenderablePokemon renderablePokemon = PlayerUtils.getRenderPokemonByMove(player, chosenMove);
+                if (renderablePokemon != null) {
+                    ServerPlayNetworking.send(player, new AnimationHMPacketS2C(renderablePokemon));
+                }
+
+                // --- Teletrasporto alle coordinate configurate ---
+                double x = ModConfig.ULTRAHOLE_SETTINGS.x;
+                double y = ModConfig.ULTRAHOLE_SETTINGS.y;
+                double z = ModConfig.ULTRAHOLE_SETTINGS.z;
+
+                player.teleport(targetWorld, x, y, z, player.getYaw(), player.getPitch());
+            });
+        });
+    }
+
+
+
 
     private static void registerTeleportHandler() {
         ServerPlayNetworking.registerGlobalReceiver(TeleportPacketC2S.ID, (payload, context) -> {

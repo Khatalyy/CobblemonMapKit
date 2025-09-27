@@ -12,15 +12,13 @@ import kotlin.Unit;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.joml.Vector3f;
 
-public class TeleportMenuOption {
-
-    // Flag globale lato client: indica se aggiungere Teleport alla ruota
-    private static boolean canAddTeleportOption = false;
+public class UltraHoleMenuOption {
+    // Flag globale lato client: indica se aggiungere UltraHole alla ruota
+    private static boolean canAddUltraHoleOption = false;
 
     public static void register() {
         registerTeleportMenuResponse();
@@ -30,11 +28,11 @@ public class TeleportMenuOption {
 
     /** Riceve il pacchetto dal server e aggiorna il flag globale */
     private static void registerTeleportMenuResponse() {
-        ClientPlayNetworking.registerGlobalReceiver(TeleportMenuS2CPacket.ID, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(UltraHoleMenuS2CPacket.ID, (payload, context) -> {
             MinecraftClient mc = MinecraftClient.getInstance();
             mc.execute(() -> {
-                canAddTeleportOption = payload.canTeleport();
-                System.out.println("[TeleportMenuOption] Flag aggiornato: canAddTeleportOption = " + canAddTeleportOption);
+                canAddUltraHoleOption = payload.canUltraHole();
+                System.out.println("[UltraHoleMenuOption] Flag aggiornato: canAddUltraHoleOption = " + canAddUltraHoleOption);
             });
         });
     }
@@ -43,10 +41,10 @@ public class TeleportMenuOption {
     private static void registerGUIEvent() {
         EventObservable<PokemonInteractionGUICreationEvent> observable = CobblemonEvents.POKEMON_INTERACTION_GUI_CREATION; observable
                 .subscribe(Priority.NORMAL, event -> {
-                    if (!canAddTeleportOption) return null;
+                    if (!canAddUltraHoleOption) return null;
 
-                    Identifier icon = Identifier.of(HMMod.MOD_ID, "textures/gui/teleport/icon_teleport.png");
-                    String tooltip = "Teleport";
+                    Identifier icon = Identifier.of(HMMod.MOD_ID, "textures/gui/ultraholes/icon_ultraholes.png");
+                    String tooltip = "UltraHole";
 
                     kotlin.jvm.functions.Function0<Vector3f> colourFunc = () -> new Vector3f(1f, 1f, 1f);
 
@@ -60,10 +58,10 @@ public class TeleportMenuOption {
 
                         // Invia pacchetto C2S per Teleport
                         if (mc.player != null) {
-                            ClientPlayNetworking.send(new TeleportPacketC2S(mc.player.getBlockPos()));
+                            ClientPlayNetworking.send(new UltraHolePacketC2S(mc.player.getBlockPos()));
                         }
 
-                        System.out.println("[TeleportMenuOption] Opzione Teleport premuta!");
+                        System.out.println("[UltraHoleMenuOption] Opzione UltraHole premuta!");
                         return Unit.INSTANCE;
                     };
 
@@ -80,8 +78,8 @@ public class TeleportMenuOption {
             assert MinecraftClient.getInstance().currentScreen != null;
             ScreenEvents.remove(MinecraftClient.getInstance().currentScreen).register(screen -> {
                 if (screen.getClass().getSimpleName().equals("PokemonInteractionScreen")) {
-                    canAddTeleportOption = false;
-                    System.out.println("[TeleportMenuOption] Flag canAddTeleportOption resettato");
+                    canAddUltraHoleOption = false;
+                    System.out.println("[UltraHoleMenuOption] Flag canAddUltraHoleOption resettato");
                 }
             });
         });
