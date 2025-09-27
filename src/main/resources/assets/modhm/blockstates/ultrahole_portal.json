@@ -1,5 +1,5 @@
 {
   "variants": {
-    "": { "model": "modhm:block/movable_rock" }
+    "": { "model": "modhm:block/ultrahole_portal" }
   }
 }

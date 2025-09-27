@@ -88,7 +88,7 @@ public class ModNetworking {
             ServerPlayerEntity player = context.player();
             context.server().execute(() -> {
 
-                // --- Controllo mosse ---
+                // --- Controllo mosse richieste ---
                 List<String> ultraHoleMoves = List.of("sunsteelstrike", "moongeistbeam");
                 List<String> knownMoves = ultraHoleMoves.stream()
                         .filter(move -> PlayerUtils.hasMove(player, move))
@@ -98,21 +98,23 @@ public class ModNetworking {
                     return;
                 }
 
-                // --- Controllo item ---
+                // --- Controllo item richiesto ---
                 if (ModConfig.ULTRAHOLE.item != null && !PlayerUtils.hasRequiredItem(player, ModConfig.ULTRAHOLE.item)) {
                     player.sendMessage(Text.literal(ModConfig.ULTRAHOLE.message), false);
                     return;
                 }
 
-                // --- Controllo se il giocatore ha già un portale ---
+                // --- Controllo se il giocatore ha già un portale attivo ---
                 if (activePortals.containsKey(player.getUuid())) {
                     player.sendMessage(Text.literal("⚠️ You already have an active UltraHole portal!"), false);
                     return;
                 }
 
-                // --- Calcola posizione portale davanti al giocatore ---
+                // --- Calcola posizione portale: 5 blocchi davanti + 1 blocco in alto ---
                 int distance = 5;
-                BlockPos portalPos = player.getBlockPos().offset(player.getHorizontalFacing(), distance);
+                BlockPos portalPos = player.getBlockPos()
+                        .offset(player.getHorizontalFacing(), distance) // 5 blocchi avanti
+                        .up(1); // 1 blocco in alto
 
                 // --- Posa il portale ---
                 player.getWorld().setBlockState(portalPos, ModBlocks.ULTRAHOLE_PORTAL.getDefaultState());
@@ -142,13 +144,14 @@ public class ModNetworking {
                         );
                     }
 
-                    // --- Callback per rimuovere dalla mappa quando il portale sparisce ---
+                    // --- Callback per rimuovere il portale dalla mappa quando sparisce ---
                     portalEntity.setOnRemove(() -> activePortals.remove(player.getUuid()));
                     activePortals.put(player.getUuid(), portalPos);
                 }
             });
         });
     }
+
 
     private static void registerTeleportHandler() {
         ServerPlayNetworking.registerGlobalReceiver(TeleportPacketC2S.ID, (payload, context) -> {
