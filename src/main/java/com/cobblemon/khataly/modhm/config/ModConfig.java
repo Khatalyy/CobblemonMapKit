@@ -39,7 +39,7 @@ public class ModConfig {
     public static RequiredItem ULTRAHOLE = new RequiredItem(null, "❌ You need Ultrabeast to summon a Ultra Hole!");
 
     // --- UltraHole default settings ---
-    public static UltraHoleSettings ULTRAHOLE_SETTINGS = new UltraHoleSettings("minecraft:the_end", 0, 64, 0, 300); // default durata 200 tick
+    public static UltraHoleSettings ULTRAHOLE_SETTINGS = new UltraHoleSettings("minecraft:the_end", 0, 64, 0, 800); // default durata 200 tick
 
     // --- Load config from JSON ---
     public static void load() {
@@ -193,7 +193,7 @@ public class ModConfig {
             this.x = 0;
             this.y = 64;
             this.z = 0;
-            this.durationTicks = 300;
+            this.durationTicks = 800;
         }
 
         public UltraHoleSettings(String destinationDimension, double x, double y, double z, int durationTicks) {

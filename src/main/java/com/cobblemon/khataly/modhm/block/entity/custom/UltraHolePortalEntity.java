@@ -25,6 +25,9 @@ public class UltraHolePortalEntity extends BlockEntity {
     private double targetX, targetY, targetZ;
     private Runnable onRemove;
 
+    // Flag per suono di apertura
+    private boolean growSoundPlayed = false;
+
     public UltraHolePortalEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ULTRAHOLE_ROCK_BE, pos, state);
         this.targetDimension = ModConfig.ULTRAHOLE_SETTINGS.destinationDimension;
@@ -50,6 +53,10 @@ public class UltraHolePortalEntity extends BlockEntity {
     public int getAge() { return age; }
     public void setAge(int age) { this.age = age; }
     public int getLifetime() { return lifetime; }
+
+    // Nuovi getter/setter per il suono
+    public boolean isGrowSoundPlayed() { return growSoundPlayed; }
+    public void setGrowSoundPlayed(boolean played) { this.growSoundPlayed = played; }
 
     @Nullable
     public ServerWorld getTargetWorld(MinecraftServer server) {
@@ -110,6 +117,7 @@ public class UltraHolePortalEntity extends BlockEntity {
         nbt.putDouble("targetZ", targetZ);
         nbt.putInt("lifetime", lifetime);
         nbt.putInt("age", age);
+        nbt.putBoolean("growSoundPlayed", growSoundPlayed);
     }
 
     @Override
@@ -121,5 +129,6 @@ public class UltraHolePortalEntity extends BlockEntity {
         targetZ = nbt.getDouble("targetZ");
         lifetime = nbt.getInt("lifetime");
         age = nbt.getInt("age");
+        growSoundPlayed = nbt.getBoolean("growSoundPlayed");
     }
 }
