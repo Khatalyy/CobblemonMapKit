@@ -22,7 +22,7 @@ public final class BadgeBoxClientHandler {
                 if (mc.player == null) return;
 
                 List<ItemStack> stacks = new ArrayList<>(((OpenBadgeBoxS2CPacket) payload).badges().size());
-                List<Integer>   shines = new ArrayList<>(((OpenBadgeBoxS2CPacket) payload).badges().size());
+                List<Integer> shines = new ArrayList<>(((OpenBadgeBoxS2CPacket) payload).badges().size());
                 ((OpenBadgeBoxS2CPacket) payload).badges().forEach(e -> {
                     Item it = Registries.ITEM.get(e.id());
                     stacks.add(new ItemStack(it));
@@ -30,21 +30,26 @@ public final class BadgeBoxClientHandler {
                 });
 
                 var screen = new BadgeCaseScreen(((OpenBadgeBoxS2CPacket) payload).handUsed(), stacks, shines, ((OpenBadgeBoxS2CPacket) payload).totalSlots());
-                mc.setScreen(screen);
+
+                // *** IMPORTANTE: animazione PRIMA di setScreen ***
                 ((OpenBadgeBoxS2CPacket) payload).animInsertedId().ifPresent(screen::queueInsertAnimation);
+
+                mc.setScreen(screen);
             });
         });
 
         ClientPlayNetworking.registerGlobalReceiver(SyncBadgeBoxS2CPacket.ID, (payload, ctx) -> {
             ctx.client().execute(() -> {
                 if (MinecraftClient.getInstance().currentScreen instanceof BadgeCaseScreen screen) {
+
                     List<ItemStack> stacks = new ArrayList<>(((SyncBadgeBoxS2CPacket) payload).badges().size());
-                    List<Integer>   shines = new ArrayList<>(((SyncBadgeBoxS2CPacket) payload).badges().size());
+                    List<Integer> shines = new ArrayList<>(((SyncBadgeBoxS2CPacket) payload).badges().size());
                     ((SyncBadgeBoxS2CPacket) payload).badges().forEach(e -> {
                         Item it = Registries.ITEM.get(e.id());
                         stacks.add(new ItemStack(it));
                         shines.add(e.shine());
                     });
+
                     screen.applySync(stacks, shines, ((SyncBadgeBoxS2CPacket) payload).totalSlots());
                 }
             });

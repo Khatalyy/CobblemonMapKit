@@ -20,7 +20,7 @@ public class BreakableRock extends BlockWithEntity implements BlockEntityProvide
 
     public static final MapCodec<BreakableRock> CODEC = BreakableRock.createCodec(BreakableRock::new);
     private static final VoxelShape SHAPE =
-            Block.createCuboidShape(0, 0, 0, 16, 16, 16);
+            Block.createCuboidShape(0, 0, 0, 16, 24, 16);
 
     public BreakableRock(Settings settings) {
         super(settings);

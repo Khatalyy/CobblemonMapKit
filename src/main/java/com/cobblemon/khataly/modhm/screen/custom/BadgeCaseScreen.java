@@ -16,6 +16,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class BadgeCaseScreen extends Screen {
 
@@ -25,18 +26,29 @@ public class BadgeCaseScreen extends Screen {
     private List<Integer>   shines; // 0..100
     private int total;
 
+    // pannello
     private final int panelW = 256;
     private final int panelH = 160;
     private int left, top;
 
+    // griglia
     private final int rows = 2, cols = 4;
+    private final float itemScale = 1.6f; // badge grandi
+    private final int   slotSize  = 40;
 
-    // badge più grandi
-    private final float itemScale = 1.6f;
-    private final int   slotSize  = 40; // cornice sobria, badge centrati
+    // polish
+    private int  polishingSlot = -1;
+    private double lastX, lastY, strokeAccum = 0;
+    private long lastPolishSoundMs = 0;
 
-    private final List<Flying> anims = new ArrayList<>();
+    // animazione inserimento “cinematica”
     private Identifier pendingAnimId = null;
+    private CinematicInsert cinematic = null;
+    private long screenShakeUntil = 0L;
+    private final Random rnd = new Random();
+
+    // particelle stelline “spark”
+    private final List<Spark> sparks = new ArrayList<>();
 
     public BadgeCaseScreen(Hand handUsed, List<ItemStack> badges, List<Integer> shines, int total) {
         super(Text.translatable("item." + HMMod.MOD_ID + ".badge_case"));
@@ -45,7 +57,7 @@ public class BadgeCaseScreen extends Screen {
         this.total  = Math.max(total, badges.size());
     }
 
-    /** blocca attack/use per evitare “traballo” del braccio */
+    /** evita il “traballo” del braccio mentre la GUI è aperta */
     @Override public void tick() {
         var opts = MinecraftClient.getInstance().options;
         opts.attackKey.setPressed(false);
@@ -53,76 +65,27 @@ public class BadgeCaseScreen extends Screen {
         super.tick();
     }
 
-    /** chiamalo subito dopo setScreen */
-    public void queueInsertAnimation(Identifier badgeId) { this.pendingAnimId = badgeId; }
+    /** chiamata dal client handler subito dopo setScreen */
+    public void queueInsertAnimation(Identifier badgeId) {
+        this.pendingAnimId = badgeId;
+    }
 
-    @Override protected void init() {
+    @Override
+    protected void init() {
         super.init();
         this.left = (this.width - panelW) / 2;
         this.top  = (this.height - panelH) / 2;
 
         if (pendingAnimId != null) {
-            startOpenInsertAnimation(pendingAnimId);
+            startCinematicInsert(pendingAnimId);
             pendingAnimId = null;
         }
     }
 
     @Override public boolean shouldPause() { return false; }
 
-    /* ====== animazioni ====== */
-    private static float easeOutCubic(float t){ return 1f - (float)Math.pow(1f - t, 3); }
-    private class Flying {
-        final ItemStack stack; final float sx, sy, ex, ey; final long startMs; final long durMs;
-        Flying(ItemStack st, float sx, float sy, float ex, float ey, long dur){
-            this.stack=st; this.sx=sx; this.sy=sy; this.ex=ex; this.ey=ey; this.durMs=dur; this.startMs=System.currentTimeMillis();
-        }
-        boolean render(DrawContext ctx){
-            long now = System.currentTimeMillis();
-            float t = Math.min(1f, (now - startMs) / (float)durMs);
-            float e = easeOutCubic(t);
-            float x = sx + (ex - sx) * e;
-            float y = sy + (ey - sy) * e;
+    /* ====================== Layout ====================== */
 
-            ctx.getMatrices().push();
-            ctx.getMatrices().translate(0, 0, 200);
-            ctx.getMatrices().scale(itemScale, itemScale, 1f);
-            int dx = Math.round(x / itemScale);
-            int dy = Math.round(y / itemScale);
-            ctx.drawItem(stack, dx, dy);
-            ctx.drawItemInSlot(textRenderer, stack, dx, dy);
-            ctx.getMatrices().pop();
-
-            return t >= 1f;
-        }
-    }
-
-    public void startOpenInsertAnimation(Identifier badgeId) {
-        if (this.width == 0 || this.height == 0) { this.pendingAnimId = badgeId; return; }
-        int idx = indexOfBadgeId(badgeId);
-        if (idx < 0) return;
-        int[] pos = itemDrawPos(idx);
-        float ex = pos[0], ey = pos[1];
-        float sx = left + panelW / 2f - 8, sy = top + panelH + 20; // dal basso verso lo slot
-        var it = Registries.ITEM.get(badgeId);
-        anims.add(new Flying(new ItemStack(it), sx, sy, ex, ey, 450));
-    }
-
-    public void applySync(List<ItemStack> newBadges, List<Integer> newShines, int total) {
-        for (int i = 0; i < Math.min(newBadges.size(), rows*cols); i++) {
-            var st = newBadges.get(i);
-            if (i >= badges.size() || badges.get(i).isEmpty() || badges.get(i).getItem() != st.getItem()) {
-                int[] pos = itemDrawPos(i);
-                float ex = pos[0], ey = pos[1];
-                float sx = left + panelW / 2f - 8, sy = top + panelH + 20;
-                anims.add(new Flying(st.copy(), sx, sy, ex, ey, 350));
-            }
-        }
-        this.badges = new ArrayList<>(newBadges);
-        this.shines = new ArrayList<>(newShines);
-        this.total  = Math.max(total, newBadges.size());
-    }
-
-    /* ====== layout ====== */
     private int gridStartX(){ return left + (panelW - cols * slotSize) / 2; }
     private int gridStartY(){ return top  + (panelH - rows * slotSize) / 2 + 8; }
 
@@ -149,22 +112,13 @@ public class BadgeCaseScreen extends Screen {
         return -1;
     }
 
-    private int hoveredSlotIndex(int mx, int my){
-        for (int i=0;i<Math.min(total, rows*cols);i++){
-            int[] b = slotBounds(i);
-            if (mx>=b[0] && mx<b[2] && my>=b[1] && my<b[3]) return i;
-        }
-        return -1;
-    }
-
-    /* ====== input: lucidatura + rimozione ====== */
-
-    private int polishingSlot = -1;
-    private double lastX, lastY, strokeAccum = 0;
-    private long lastPolishSoundMs = 0;
+    /* =================== Input: polish/eject =================== */
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // durante la cinematica blocco input
+        if (cinematic != null) return true;
+
         int idx = hoveredSlotIndex((int)mouseX, (int)mouseY);
 
         // Shift + Right Click => eject
@@ -191,6 +145,8 @@ public class BadgeCaseScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+        if (cinematic != null) return true;
+
         if (button == 0 && polishingSlot >= 0 && polishingSlot < badges.size()) {
             double dxl = mouseX - lastX, dyl = mouseY - lastY;
             strokeAccum += Math.hypot(dxl, dyl);
@@ -201,16 +157,15 @@ public class BadgeCaseScreen extends Screen {
                 var id = Registries.ITEM.getId(badges.get(polishingSlot).getItem());
                 ClientPlayNetworking.send(new PolishBadgeC2SPacket(id, 5));
 
-                // suono (rate-limited)
                 long now = System.currentTimeMillis();
                 if (now - lastPolishSoundMs > 110 && MinecraftClient.getInstance().player != null) {
                     MinecraftClient.getInstance().player.playSound(SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, 0.35f, 1.15f);
                     lastPolishSoundMs = now;
                 }
 
-                // feedback visual locale
                 int curr = polishingSlot < shines.size() ? shines.get(polishingSlot) : 0;
                 if (polishingSlot < shines.size()) shines.set(polishingSlot, Math.min(100, curr + 5));
+                spawnSlotSparks(polishingSlot, 3);
             }
             return true;
         }
@@ -223,11 +178,62 @@ public class BadgeCaseScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    /* ====== render ====== */
+    private int hoveredSlotIndex(int mx, int my){
+        for (int i=0;i<Math.min(total, rows*cols);i++){
+            int[] b = slotBounds(i);
+            if (mx>=b[0] && mx<b[2] && my>=b[1] && my<b[3]) return i;
+        }
+        return -1;
+    }
+
+    /* ====================== Sync/Anim ====================== */
+
+    /** chiamata dal S2C sync */
+    public void applySync(List<ItemStack> newBadges, List<Integer> newShines, int total) {
+        // niente animazione “cinematica” sui sync normali: aggiorno e basta
+        this.badges = new ArrayList<>(newBadges);
+        this.shines = new ArrayList<>(newShines);
+        this.total  = Math.max(total, newBadges.size());
+    }
+
+    /** avvia la cinematic “gigante al centro → spin → schianto nello slot” */
+    private void startCinematicInsert(Identifier badgeId) {
+        int idx = indexOfBadgeId(badgeId);
+        if (idx < 0 || idx >= badges.size()) return;
+        ItemStack st = badges.get(idx).copy();
+        if (st.isEmpty()) return;
+
+        // coord target slot
+        int[] pos = itemDrawPos(idx);
+        int targetX = pos[0];
+        int targetY = pos[1];
+
+        // centro schermo (pos per il top-left del badge scalato gigante)
+        float giantScale = 3.4f; // medaglia “gigante”
+        int giantPx = Math.round(16 * giantScale);
+        int centerX = left + (panelW - giantPx) / 2;
+        int centerY = top  + (panelH - giantPx) / 2 - 6;
+
+        this.cinematic = new CinematicInsert(st, idx, centerX, centerY, giantScale, targetX, targetY);
+        // suonino di arrivo
+        if (client != null && client.player != null) {
+            client.player.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 0.6f, 1f);
+        }
+    }
+
+    /* =================== Render =================== */
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        // background pannello
+        // shake globale (quando “sbatti” la medaglia nello slot)
+        ctx.getMatrices().push();
+        if (System.currentTimeMillis() < screenShakeUntil) {
+            float sx = (rnd.nextFloat() - 0.5f) * 2f; // [-1..1]
+            float sy = (rnd.nextFloat() - 0.5f) * 2f;
+            ctx.getMatrices().translate(sx, sy, 0);
+        }
+
+        // pannello
         if (MinecraftClient.getInstance().getResourceManager().getResource(BG_TEX).isPresent()) {
             ctx.drawTexture(BG_TEX, left, top, 0, 0, panelW, panelH, panelW, panelH);
         } else {
@@ -239,38 +245,49 @@ public class BadgeCaseScreen extends Screen {
         ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("GYM BADGES"),
                 left + panelW/2, top + 6, 0xFFE8E0C8);
 
-        // griglia 2×4 (cornice sobria)
+        // griglia 2×4
         for (int i=0;i<Math.min(total, rows*cols);i++){
             int[] b = slotBounds(i);
             ctx.fill(b[0], b[1], b[2], b[3], 0x22000000);
             ctx.fill(b[0]+1, b[1]+1, b[2]-1, b[3]-1, 0x22000000);
         }
 
-        // items scalati
+        // items statici
         int itemPx = Math.round(16 * itemScale);
         for (int i=0;i<Math.min(badges.size(), rows*cols);i++){
             var st = badges.get(i);
             if (st.isEmpty()) continue;
             int[] p = itemDrawPos(i);
 
-            ctx.getMatrices().push();
-            ctx.getMatrices().scale(itemScale, itemScale, 1f);
-            int dx = Math.round(p[0] / itemScale);
-            int dy = Math.round(p[1] / itemScale);
-            ctx.drawItem(st, dx, dy);
-            ctx.drawItemInSlot(this.textRenderer, st, dx, dy);
-            ctx.getMatrices().pop();
-
-            int shine = (i < shines.size() ? shines.get(i) : 0);
-            if (shine > 0) drawStars(ctx, p[0], p[1], itemPx, shine);
+            // se questo è lo slot target della cinematic, disegna sotto a scala base (si copre dopo)
+            if (cinematic != null && i == cinematic.slotIndex) {
+                // faccio solo la “sagoma” tenue: o semplicemente skippo (si vede arrivare la medaglia)
+            } else {
+                drawItemScaled(ctx, st, p[0], p[1]);
+                int shine = (i < shines.size() ? shines.get(i) : 0);
+                if (shine > 0) drawStars(ctx, p[0], p[1], itemPx, shine);
+            }
         }
 
-        // animazioni sopra
-        anims.removeIf(flying -> flying.render(ctx));
+        if (cinematic != null) {
+            if (!cinematic.render(ctx)) {
+                int finishedSlot = cinematic.slotIndex;  // <-- salva prima
+                cinematic = null;                        // <-- poi azzera
+
+                spawnSlotSparks(finishedSlot, 10);
+                screenShakeUntil = System.currentTimeMillis() + 180;
+                if (client != null && client.player != null) {
+                    client.player.playSound(SoundEvents.ITEM_BUNDLE_INSERT, 0.9f, 1.1f);
+                }
+            }
+        }
+
+        // sparks (stelline volanti)
+        renderSparks(ctx);
 
         // tooltip
         int hov = hoveredSlotIndex(mouseX, mouseY);
-        if (hov >= 0 && hov < badges.size() && !badges.get(hov).isEmpty()) {
+        if (hov >= 0 && hov < badges.size() && !badges.get(hov).isEmpty() && cinematic == null) {
             var stack = badges.get(hov);
             assert this.client != null;
             List<Text> lines = new ArrayList<>(getTooltipFromItem(this.client, stack));
@@ -279,27 +296,189 @@ public class BadgeCaseScreen extends Screen {
             ctx.drawTooltip(this.textRenderer, lines, mouseX, mouseY);
         }
 
+        ctx.getMatrices().pop();
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    /** solo stelline (niente overlay bianco) */
+    @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+
+    }
+    /* =================== Helpers disegno =================== */
+
+    private void drawItemScaled(DrawContext ctx, ItemStack st, int x, int y) {
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale((float) 1.6, (float) 1.6, 1f);
+        int dx = Math.round(x / (float) 1.6);
+        int dy = Math.round(y / (float) 1.6);
+        ctx.drawItem(st, dx, dy);
+        ctx.drawItemInSlot(this.textRenderer, st, dx, dy);
+        ctx.getMatrices().pop();
+    }
+
+    /** solo stelline, niente overlay bianco */
     private void drawStars(DrawContext ctx, int x, int y, int size, int shine) {
-        // densità in base allo shine
         int stars = Math.max(1, shine / 20); // 1..5
         long tick = System.currentTimeMillis() / 120;
         for (int i = 0; i < stars; i++) {
             if ((tick + i) % 3 != 0) continue;
-            int sx = x + 3 + (int)(Math.random() * Math.max(1, (size - 6)));
-            int sy = y + 3 + (int)(Math.random() * Math.max(1, (size - 6)));
-            int c = (220 << 24) | 0xFFFFFF;
+            int sx = x + 3 + rnd.nextInt(Math.max(1, size - 6));
+            int sy = y + 3 + rnd.nextInt(Math.max(1, size - 6));
+            int a = 220;
+            int c = (a << 24) | 0xFFFFFF;
             ctx.fill(sx, sy, sx+1, sy+1, c);
             ctx.fill(sx+2, sy, sx+3, sy+1, c);
             ctx.fill(sx+1, sy-1, sx+2, sy+2, c);
         }
     }
 
-    @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+    private void spawnSlotSparks(int slotIndex, int count) {
+        int[] p = itemDrawPos(slotIndex);
+        int size = Math.round(16 * itemScale);
+        for (int i = 0; i < count; i++) {
+            sparks.add(Spark.create(p[0] + size/2f, p[1] + size/2f));
+        }
+    }
 
+    private void renderSparks(DrawContext ctx) {
+        long now = System.currentTimeMillis();
+        sparks.removeIf(s -> {
+            float t = (now - s.t0) / (float)s.lifeMs;
+            if (t >= 1f) return true;
+            float x = s.x + s.vx * t;
+            float y = s.y + s.vy * t + 0.5f * s.g * t * t;
+            int a = (int)(255 * (1f - t));
+            int c = (a << 24) | 0xFFFFFF;
+            ctx.fill((int)x, (int)y, (int)x+1, (int)y+1, c);
+            return false;
+        });
+    }
+
+    /* =================== Classi animazione =================== */
+
+    private static float easeOutCubic(float t){ return 1f - (float)Math.pow(1f - t, 3); }
+    private static float easeInOutCubic(float t){
+        return t < 0.5f ? 4f*t*t*t : 1f - (float)Math.pow(-2f*t + 2f, 3)/2f;
+    }
+
+    /** mini particella stellina */
+    private static class Spark {
+        final float x, y, vx, vy, g;
+        final long t0;
+        final long lifeMs;
+        private Spark(float x, float y, float vx, float vy, float g, long lifeMs) {
+            this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.g=g; this.lifeMs=lifeMs; this.t0=System.currentTimeMillis();
+        }
+        static Spark create(float x, float y) {
+            Random r = new Random();
+            float ang = (float)(r.nextFloat() * Math.PI * 2);
+            float spd = 1.5f + r.nextFloat()*2.0f;
+            return new Spark(x, y, (float)Math.cos(ang)*spd, (float)Math.sin(ang)*spd, 1.2f, 350 + r.nextInt(200));
+        }
+    }
+
+    /** Cinematica: IN (arrivo al centro, scala up) -> SPIN -> OUT (arco verso slot, schianto) */
+    private class CinematicInsert {
+        final ItemStack stack;
+        final int slotIndex;
+
+        // target slot
+        final int targetX, targetY;
+
+        // fase centrale
+        final int centerX, centerY;
+        final float bigScale;
+
+        // fasi & durate
+        final long tStart = System.currentTimeMillis();
+        final long dIn = 250;    // ingresso al centro (pos+scale)
+        final long dSpin = 300;  // spin al centro
+        final long dOut = 320;   // volo verso slot
+
+        CinematicInsert(ItemStack st, int slotIndex, int centerX, int centerY, float bigScale, int targetX, int targetY) {
+            this.stack = st;
+            this.slotIndex = slotIndex;
+            this.centerX = centerX;
+            this.centerY = centerY;
+            this.bigScale = bigScale;
+            this.targetX = targetX;
+            this.targetY = targetY;
+        }
+
+        boolean render(DrawContext ctx) {
+            long now = System.currentTimeMillis();
+            long dt = now - tStart;
+
+            if (dt <= dIn) {
+                // fase 1: da fuori schermo (basso centrale) al centro gigante (easeOut)
+                float t = easeOutCubic(dt / (float)dIn);
+
+                float startX = left + panelW/2f - 8;
+                float startY = top + panelH + 24;
+
+                float x = lerp(startX, centerX, t);
+                float y = lerp(startY, centerY, t);
+                float s = lerp(itemScale, bigScale, t);
+                float rot = (float)Math.toRadians(20 * t); // leggero tilt
+
+                drawItemAt(ctx, stack, x, y, s, rot);
+                return true;
+
+            } else if (dt <= dIn + dSpin) {
+                // fase 2: spin al centro (easeInOut)
+                float t = easeInOutCubic((dt - dIn) / (float)dSpin);
+                float rot = (float)Math.toRadians(720 * t); // 2 giri completi
+                drawItemAt(ctx, stack, centerX, centerY, bigScale, rot);
+                return true;
+
+            } else if (dt <= dIn + dSpin + dOut) {
+                // fase 3: arco verso lo slot + shrink (easeOut)
+                float t = easeOutCubic((dt - dIn - dSpin) / (float)dOut);
+
+                // curva (bezier) con controllo un po’ sopra lo slot
+                float cx = (centerX + targetX) / 2f;
+                float cy = Math.min(centerY, targetY) - 30; // arco verso l’alto
+
+                float[] p = quadBezier(centerX, centerY, cx, cy, targetX, targetY, t);
+                float x = p[0], y = p[1];
+
+                float s = lerp(bigScale, itemScale, t);
+                float rot = (float)Math.toRadians(45 * (1f - t)); // si raddrizza
+
+                drawItemAt(ctx, stack, x, y, s, rot);
+
+                if (t > 0.95f && now - screenShakeUntil > 300) {
+                    // piccolo pre-impattino + particelle
+                    spawnSlotSparks(slotIndex, 6);
+                    screenShakeUntil = now + 140;
+                }
+                return true;
+
+            } else {
+                // fine: medaglia “appoggiata” nello slot (il render statico ci pensa sopra)
+                return false;
+            }
+        }
+
+        private float lerp(float a, float b, float t) { return a + (b - a) * t; }
+        private float[] quadBezier(float x0, float y0, float cx, float cy, float x1, float y1, float t) {
+            float u = 1f - t;
+            float x = u*u*x0 + 2*u*t*cx + t*t*x1;
+            float y = u*u*y0 + 2*u*t*cy + t*t*y1;
+            return new float[]{x, y};
+        }
+    }
+
+    /** draw con pivot al centro (rotazione) e scala, sopra tutti */
+    private void drawItemAt(DrawContext ctx, ItemStack st, float x, float y, float scale, float rotZ) {
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(x, y, (float) 300);
+        ctx.getMatrices().translate(8, 8, 0);          // pivot centro item 16x16
+        ctx.getMatrices().multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Z.rotation(rotZ));
+        ctx.getMatrices().scale(scale, scale, 1f);
+        ctx.getMatrices().translate(-8, -8, 0);
+        ctx.drawItem(st, 0, 0);
+        ctx.drawItemInSlot(this.textRenderer, st, 0, 0);
+        ctx.getMatrices().pop();
     }
 }

@@ -29,7 +29,7 @@ public class ModConfig {
     public static int FLASH_DURATION = 60;
 
     // --- Required Items ---
-    public static RequiredItem ROCKSMASH = new RequiredItem("minecraft:iron_pickaxe", "❌ You need an Iron Pickaxe to use Rock Smash!");
+    public static RequiredItem ROCKSMASH = new RequiredItem("modhm:boulder_badge", "❌ You need the Boulder Badge to use Rock Smash!");
     public static RequiredItem FLY = new RequiredItem(null, "❌ You need a special item to use Fly!");
     public static RequiredItem CUT = new RequiredItem(null, "❌ You need a knife or machete to use Cut!");
     public static RequiredItem STRENGTH = new RequiredItem(null, "❌ You need a heavy item to use Strength!");
