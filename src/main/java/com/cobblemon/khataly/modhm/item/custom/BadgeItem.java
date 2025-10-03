@@ -33,6 +33,12 @@ public class BadgeItem extends Item {
             return TypedActionResult.pass(badgeStack);
         }
 
+        // ⬇️ Blocco se pieno
+        if (BadgeCaseItem.isFull(caseStack)) {
+            sp.sendMessage(Text.translatable("msg." + HMMod.MOD_ID + ".badge_case.full"), true);
+            return TypedActionResult.pass(badgeStack);
+        }
+
         Identifier badgeId = Registries.ITEM.getId(badgeStack.getItem());
         boolean added = BadgeCaseItem.addBadge(caseStack, badgeId);
         if (added) badgeStack.decrement(1);

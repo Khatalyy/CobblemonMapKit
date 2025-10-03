@@ -22,6 +22,14 @@ import java.util.Random;
  * BadgeCaseScreen – lucidatura lenta a “metri” + livelli stelle.
  */
 public class BadgeCaseScreen extends Screen {
+    // ---- Theme (estratto dal tuo mockup)
+    private static final int GOLD_LIGHT = 0xFFF3DDA4;
+    private static final int GOLD_BASE  = 0xFFE0C06A;
+    private static final int GOLD_DARK  = 0xFF6A5220;
+    private static final int CREAM_SOLID= 0xFFF6EEDC;
+    private static final int SHADOW_30  = 0x4D000000;
+    private static final int SHADOW_50  = 0x80000000;
+
 
     private static final Identifier BG_TEX = Identifier.of(HMMod.MOD_ID, "textures/gui/badge_case.png");
 
@@ -178,7 +186,7 @@ public class BadgeCaseScreen extends Screen {
 
                     // suono (rate-limited indipendente)
                     if (now - lastPolishSoundMs > 150 && MinecraftClient.getInstance().player != null) {
-                        MinecraftClient.getInstance().player.playSound(SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, 0.3f, 1.1f);
+                        MinecraftClient.getInstance().player.playSound(SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, 1.0f, 1.1f);
                         lastPolishSoundMs = now;
                     }
 
@@ -208,7 +216,8 @@ public class BadgeCaseScreen extends Screen {
     }
 
     private int hoveredSlotIndex(int mx, int my){
-        for (int i=0;i<Math.min(total, rows*cols);i++){
+        // ⬇️ SEMPRE tutti gli 8 slot, indipendentemente da `total`
+        for (int i = 0; i < rows * cols; i++) {
             int[] b = slotBounds(i);
             if (mx>=b[0] && mx<b[2] && my>=b[1] && my<b[3]) return i;
         }
@@ -270,11 +279,11 @@ public class BadgeCaseScreen extends Screen {
         }
 
         // titolo
-        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("GYM BADGES"),
-                left + panelW/2, top + 6, 0xFFE8E0C8);
+        drawGoldTitle(ctx, Text.translatable("item." + HMMod.MOD_ID + ".badge_case")); // o Text.literal("GYM BADGES")
 
-        // griglia 2×4
-        for (int i=0;i<Math.min(total, rows*cols);i++){
+
+        // ⬇️ Griglia 2×4 SEMPRE visibile, ignorando `total`
+        for (int i = 0; i < rows * cols; i++) {
             int[] b = slotBounds(i);
             ctx.fill(b[0], b[1], b[2], b[3], 0x22000000);
             ctx.fill(b[0]+1, b[1]+1, b[2]-1, b[3]-1, 0x22000000);
@@ -341,6 +350,61 @@ public class BadgeCaseScreen extends Screen {
         ctx.drawItemInSlot(this.textRenderer, st, dx, dy);
         ctx.getMatrices().pop();
     }
+    private void drawGoldTitle(DrawContext ctx, Text title) {
+        // dimensioni più compatte e più in alto
+        final int sideMargin = 40;                 // margine laterale
+        final int barW = panelW - sideMargin * 2;  // più corto
+        final int barH = 22;
+        final int barX = left + sideMargin;
+        final int barY = top + 6;                  // più vicino al bordo alto
+
+        // disegna SOPRA alla texture di sfondo
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(0, 0, 200f);
+
+        // ombra morbida di caduta
+        ctx.fill(barX + 2, barY + 3, barX + barW + 2, barY + barH + 3, SHADOW_30);
+
+        // piastra piena (niente trasparenza)
+        ctx.fill(barX, barY, barX + barW, barY + barH, CREAM_SOLID);
+
+        // bordo “doppio” oro
+        // esterno scuro
+        ctx.fill(barX, barY, barX + barW, barY + 1, GOLD_DARK);
+        ctx.fill(barX, barY + barH - 1, barX + barW, barY + barH, GOLD_DARK);
+        ctx.fill(barX, barY, barX + 1, barY + barH, GOLD_DARK);
+        ctx.fill(barX + barW - 1, barY, barX + barW, barY + barH, GOLD_DARK);
+        // fillet interno
+        ctx.fill(barX + 1, barY + 1, barX + barW - 1, barY + 2, GOLD_LIGHT);
+        ctx.fill(barX + 1, barY + barH - 2, barX + barW - 1, barY + barH - 1, GOLD_BASE);
+
+        // testo centrato con outline + ombra
+        String s = title.getString();
+        int tw = this.textRenderer.getWidth(s);
+        int tx = barX + (barW - tw) / 2;
+        int ty = barY + (barH - 8) / 2;
+
+        ctx.drawText(this.textRenderer, s, tx + 1, ty + 1, SHADOW_50, false); // ombra
+        ctx.drawText(this.textRenderer, s, tx - 1, ty, GOLD_DARK, false);
+        ctx.drawText(this.textRenderer, s, tx + 1, ty, GOLD_DARK, false);
+        ctx.drawText(this.textRenderer, s, tx, ty - 1, GOLD_DARK, false);
+        ctx.drawText(this.textRenderer, s, tx, ty + 1, GOLD_DARK, false);
+        ctx.drawText(this.textRenderer, s, tx, ty, GOLD_BASE, false);
+
+        // piccole stelle decorative (dorate) ai lati
+        long t = System.currentTimeMillis() / 120;
+        boolean blink = (t % 2) == 0;
+        int decoY = ty - 1;
+        int gap = 8;
+        int leftStarX  = tx - gap - this.textRenderer.getWidth("✦");
+        int rightStarX = tx + tw + gap;
+        int starColor = blink ? GOLD_LIGHT : GOLD_BASE;
+        ctx.drawText(this.textRenderer, "✦", leftStarX,  decoY, starColor, false);
+        ctx.drawText(this.textRenderer, "✦", rightStarX, decoY, starColor, false);
+
+        ctx.getMatrices().pop();
+    }
+
 
     /** stelle a livelli – niente overlay bianco */
     private void drawStarsLeveled(DrawContext ctx, int x, int y, int size, int shine) {

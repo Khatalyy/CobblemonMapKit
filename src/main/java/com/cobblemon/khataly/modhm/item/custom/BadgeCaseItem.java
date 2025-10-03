@@ -34,6 +34,9 @@ public class BadgeCaseItem extends Item {
     public static final TagKey<Item> BADGE_TAG =
             TagKey.of(RegistryKeys.ITEM, Identifier.of(HMMod.MOD_ID, "badges"));
 
+    /** Cap fisso come la griglia 2x4 */
+    public static final int MAX_SLOTS = 8;
+
     private static final String NBT_BADGES = "Badges";
     private static final String KEY_ID   = "id";
     private static final String KEY_SH   = "shine";
@@ -84,12 +87,26 @@ public class BadgeCaseItem extends Item {
 
     /* ===================== API pubblica (usata da handlers / utility) ===================== */
 
-    /** Inserisce un badge se non già presente (shine=0). */
+    /** Ritorna true se il box ha già 8 badge. */
+    public static boolean isFull(ItemStack caseStack) {
+        int count = 0;
+        for (BadgeData b : readBadgesData(caseStack)) { // no decay, no scritture
+            if (b.id() != null) count++;
+            if (count >= MAX_SLOTS) return true;
+        }
+        return false;
+    }
+
+    /** Inserisce un badge se non già presente (shine=0) e se non è pieno. */
     public static boolean addBadge(ItemStack caseStack, Identifier id) {
+        // hard cap
+        if (isFull(caseStack)) return false;
+
         long now = System.currentTimeMillis();
         List<BadgeData> data = readBadgesDataAndDecay(caseStack);
         boolean already = data.stream().anyMatch(b -> id.equals(b.id()));
         if (already) return false;
+
         data.add(new BadgeData(id, 0, now));
         writeBadgesData(caseStack, data);
         return true;

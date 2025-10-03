@@ -11,6 +11,7 @@ import com.cobblemon.khataly.modhm.item.ModItemGroups;
 import com.cobblemon.khataly.modhm.item.ModItems;
 import com.cobblemon.khataly.modhm.config.FlyTargetConfig;
 import com.cobblemon.khataly.modhm.networking.ModNetworking;
+import com.cobblemon.khataly.modhm.networking.handlers.BadgeTagUseHandler;
 import com.cobblemon.khataly.modhm.screen.ModScreenHandlers;
 import com.cobblemon.khataly.modhm.sound.ModSounds;
 import net.fabricmc.api.ModInitializer;
@@ -37,6 +38,7 @@ public class HMMod implements ModInitializer {
         ModBlocks.registerModBlocks();
         FlyTargetProximityWatcher.register();
         ModItemGroups.registerItemGroups();
+        BadgeTagUseHandler.register();
         ServerEventHandler.register();
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ModCommands.register(dispatcher);

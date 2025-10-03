@@ -18,8 +18,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gestisce lo stato di arrampicata dei giocatori.
- * Fix principale: azzera fallDistance durante la scalata
- * e mantiene una breve immunità al danno da caduta dopo la fine.
+ * - Azzera fallDistance durante la scalata
+ * - Breve immunità al danno da caduta dopo la fine
+ * - Al termine di una SALITA sposta dolcemente il player di esattamente 1 blocco in avanti (lontano dalla parete)
  */
 public final class ClimbManager {
     private static final ClimbManager INSTANCE = new ClimbManager();
@@ -33,6 +34,16 @@ public final class ClimbManager {
     private final Map<ServerPlayerEntity, BlockPos> climbingTargets = new ConcurrentHashMap<>();
     private final Set<ServerPlayerEntity> playersPlayingSound = ConcurrentHashMap.newKeySet();
 
+    // Glide post-salita per 1 blocco (dolce)
+    private static final class GlideState {
+        final double destX, destY, destZ;
+        int ticksLeft;
+        GlideState(double x, double y, double z, int ticks) {
+            this.destX = x; this.destY = y; this.destZ = z; this.ticksLeft = ticks;
+        }
+    }
+    private final Map<ServerPlayerEntity, GlideState> forwardGlide = new ConcurrentHashMap<>();
+
     // Immunità al danno da caduta post-scalata (grace period)
     private final Map<ServerPlayerEntity, Integer> fallImmunityTicks = new ConcurrentHashMap<>();
 
@@ -42,12 +53,16 @@ public final class ClimbManager {
     private static final int SOUND_TICK_DELAY = 4;
     private static final int FALL_IMMUNITY_GRACE_TICKS = 10;
 
+    // Parametri glide
+    private static final double GLIDE_SPEED = 0.12;     // dolce
+    private static final int GLIDE_MAX_TICKS = 10;      // massimo tempo di glide
+    private static final double GLIDE_SNAP_EPS = 0.06;  // quando abbastanza vicino, snap
+
     /** Avvia la scalata da una posizione iniziale. */
     public void start(ServerPlayerEntity player, BlockPos startPos) {
         playersClimbing.put(player, startPos);
         climbingTicks.put(player, 0);
-        // Evita accumulo iniziale
-        player.fallDistance = 0f;
+        player.fallDistance = 0f; // evita accumulo iniziale
     }
 
     /** Da chiamare ad ogni tick server. */
@@ -59,9 +74,7 @@ public final class ClimbManager {
                 return;
             }
 
-            // Mentre si scala, niente danno da caduta
-            player.fallDistance = 0f;
-
+            player.fallDistance = 0f; // niente danno da caduta mentre scala
             climbingTicks.put(player, climbingTicks.getOrDefault(player, 0) + 1);
 
             visitedClimbBlocks.putIfAbsent(player, new HashSet<>());
@@ -89,16 +102,35 @@ public final class ClimbManager {
             if (distance < REACH_EPSILON) {
                 BlockPos next = findNextClimbStep((ServerWorld) player.getWorld(), target, visited);
                 if (next == null) {
-                    // Ultimo “boost” e fine: garantisci immunità e azzera
-                    double finalBoost = dy > 0 ? 0.2 : -0.2;
+                    // Ultimo step raggiunto
                     player.fallDistance = 0f;
                     grantFallImmunity(player);
 
-                    player.setVelocity(0, finalBoost, 0);
-                    player.velocityModified = true;
+                    if (dy > 0) {
+                        // Finito in SALITA: avvia glide di 1 blocco in avanti (lontano dalla parete)
+                        Direction forwardDir = getForwardDirectionAwayFromWall((ServerWorld) player.getWorld(), target, player);
 
-                    NetUtil.msg(player, dy > 0 ? "🧗 You climbed up!" : "🧗 You climbed down!");
-                    cleanup(player);
+                        BlockPos destBlock = target.up().offset(forwardDir); // un blocco sopra + uno in avanti
+                        double destX = destBlock.getX() + 0.5;
+                        double destY = destBlock.getY();      // piedi sul blocco
+                        double destZ = destBlock.getZ() + 0.5;
+
+                        // Registra glide dolce verso la destinazione
+                        forwardGlide.put(player, new GlideState(destX, destY, destZ, GLIDE_MAX_TICKS));
+
+                        // piccolo start boost verticale (molto leggero)
+                        player.setVelocity(0, 0.08, 0);
+                        player.velocityModified = true;
+
+                        NetUtil.msg(player, "🧗 You climbed up!");
+                    } else {
+                        // Fine verso il basso: niente push
+                        player.setVelocity(0, -0.08, 0);
+                        player.velocityModified = true;
+                        NetUtil.msg(player, "🧗 You climbed down!");
+                    }
+
+                    cleanup(player); // chiudi stato scalata (l'immunità resta; il glide è gestito sotto)
                     return;
                 }
                 climbingTargets.put(player, next);
@@ -117,16 +149,55 @@ public final class ClimbManager {
             }
         });
 
+        // --- Fase glide dolce di 1 blocco avanti (post-salita) ---
+        var itGlide = forwardGlide.entrySet().iterator();
+        while (itGlide.hasNext()) {
+            Map.Entry<ServerPlayerEntity, GlideState> e = itGlide.next();
+            ServerPlayerEntity player = e.getKey();
+            GlideState g = e.getValue();
+
+            if (!player.isAlive()) {
+                itGlide.remove();
+                continue;
+            }
+
+            // niente danno da caduta durante il glide
+            player.fallDistance = 0f;
+
+            double dx = g.destX - player.getX();
+            double dy = g.destY - player.getY();
+            double dz = g.destZ - player.getZ();
+            double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+            if (dist < GLIDE_SNAP_EPS || g.ticksLeft <= 0) {
+                // Snap finale sul centro del blocco di destinazione
+                // Uso una teletraslazione leggera: mantiene yaw/pitch
+                player.teleport(((ServerWorld)player.getWorld()), g.destX, g.destY, g.destZ, player.getYaw(), player.getPitch());
+                player.setVelocity(0, 0, 0);
+                player.velocityModified = true;
+
+                itGlide.remove();
+                continue;
+            }
+
+            // Avanza dolcemente verso la destinazione
+            double vx = (dx / dist) * GLIDE_SPEED;
+            double vy = (dy / dist) * GLIDE_SPEED;
+            double vz = (dz / dist) * GLIDE_SPEED;
+            player.setVelocity(vx, vy, vz);
+            player.velocityModified = true;
+
+            g.ticksLeft--;
+        }
+
         // --- Fase post-scalata: mantieni immunità per qualche tick ---
-        // Usiamo un iteratore per rimuovere in sicurezza
         var it = fallImmunityTicks.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<ServerPlayerEntity, Integer> e = it.next();
             ServerPlayerEntity player = e.getKey();
             int ticksLeft = e.getValue();
 
-            // Continuiamo ad azzerare per tutta la durata dell’immunità
-            player.fallDistance = 0f;
+            player.fallDistance = 0f; // continua ad azzerare durante l’immunità
 
             int next = ticksLeft - 1;
             if (next <= 0) {
@@ -137,21 +208,30 @@ public final class ClimbManager {
         }
     }
 
-    /** Ripulisce tutto lo stato di scalata (ma NON l'immunità). */
+    /** Direzione "avanti": lontano dalla parete. Se il blocco non è climbable, fallback sulla facing del player. */
+    private Direction getForwardDirectionAwayFromWall(ServerWorld world, BlockPos target, ServerPlayerEntity player) {
+        BlockState targetState = world.getBlockState(target);
+        if (targetState.isOf(ModBlocks.CLIMBABLE_ROCK)) {
+            // ClimbableRock.FACING punta *verso* il player (fronte del blocco).
+            // Per andare *via* dalla parete usiamo l'opposto.
+            return targetState.get(ClimbableRock.FACING).getOpposite();
+        }
+        return player.getHorizontalFacing(); // fallback
+    }
+
+    /** Ripulisce tutto lo stato di scalata (ma NON l'immunità né il glide). */
     private void cleanup(ServerPlayerEntity player) {
         playersClimbing.remove(player);
         climbingTicks.remove(player);
         playersPlayingSound.remove(player);
         climbingTargets.remove(player);
         visitedClimbBlocks.remove(player);
-        // Per sicurezza, azzera subito
         player.fallDistance = 0f;
-        // L'immunità post-scalata resta gestita dal ciclo sopra.
+        // forwardGlide e immunità restano gestiti dalle rispettive sezioni.
     }
 
     /** Concede immunità al danno da caduta per un certo numero di tick. */
     private void grantFallImmunity(ServerPlayerEntity player) {
-        // Mantieni il valore più alto (utile se chiamato ripetutamente)
         fallImmunityTicks.merge(player, ClimbManager.FALL_IMMUNITY_GRACE_TICKS, Math::max);
     }
 
