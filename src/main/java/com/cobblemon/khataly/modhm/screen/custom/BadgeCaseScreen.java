@@ -33,7 +33,7 @@ public class BadgeCaseScreen extends Screen {
 
     // griglia
     private final int rows = 2, cols = 4;
-    private final float itemScale = 1.6f; // badge grandi
+    private final float itemScale = 1.9f; // badge grandi
     private final int   slotSize  = 40;
 
     // polish
@@ -308,9 +308,9 @@ public class BadgeCaseScreen extends Screen {
 
     private void drawItemScaled(DrawContext ctx, ItemStack st, int x, int y) {
         ctx.getMatrices().push();
-        ctx.getMatrices().scale((float) 1.6, (float) 1.6, 1f);
-        int dx = Math.round(x / (float) 1.6);
-        int dy = Math.round(y / (float) 1.6);
+        ctx.getMatrices().scale(itemScale, itemScale, 1f);   // usa SEMPRE itemScale
+        int dx = Math.round(x / itemScale);
+        int dy = Math.round(y / itemScale);
         ctx.drawItem(st, dx, dy);
         ctx.drawItemInSlot(this.textRenderer, st, dx, dy);
         ctx.getMatrices().pop();
