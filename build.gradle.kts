@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.cobblemon.khataly.modhm"
-version = "1.0.1-SNAPSHOT"
+version = "1.0.2-SNAPSHOT"
 
 architectury {
     platformSetupLoomIde()

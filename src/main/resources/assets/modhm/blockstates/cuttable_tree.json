@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "modhm:block/cuttable_tree" }
+    "facing=north": { "model": "modhm:block/cuttable_tree" },
+    "facing=south": { "model": "modhm:block/cuttable_tree", "y": 180 },
+    "facing=west":  { "model": "modhm:block/cuttable_tree", "y": 270 },
+    "facing=east":  { "model": "modhm:block/cuttable_tree", "y": 90 }
   }
 }

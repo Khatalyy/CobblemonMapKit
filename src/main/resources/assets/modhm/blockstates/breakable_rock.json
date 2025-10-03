@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "modhm:block/breakable_rock" }
+    "facing=north": { "model": "modhm:block/breakable_rock" },
+    "facing=south": { "model": "modhm:block/breakable_rock", "y": 180 },
+    "facing=west":  { "model": "modhm:block/breakable_rock", "y": 270 },
+    "facing=east":  { "model": "modhm:block/breakable_rock", "y": 90 }
   }
 }
