@@ -22,14 +22,14 @@ public class ModItemGroups {
                         entries.add(ModBlocks.MOVABLE_ROCK);
                         entries.add(ModBlocks.CLIMBABLE_ROCK);
                         entries.add(ModItems.BADGE_CASE);
-                        entries.add(ModItems.BOULDER_BADGE);
-                        entries.add(ModItems.CASCADE_BADGE);
+                        entries.add(ModItems.FIRE_BADGE);
+                        entries.add(ModItems.WATER_BADGE);
                         entries.add(ModItems.THUNDER_BADGE);
-                        entries.add(ModItems.RAINBOW_BADGE);
-                        entries.add(ModItems.MARSH_BADGE);
-                        entries.add(ModItems.SOUL_BADGE);
-                        entries.add(ModItems.VOLCANO_BADGE);
-                        entries.add(ModItems.EARTH_BADGE);
+                        entries.add(ModItems.GRASS_BADGE);
+                        entries.add(ModItems.DRACO_BADGE);
+                        entries.add(ModItems.GHOST_BADGE);
+                        entries.add(ModItems.FAIRY_BADGE);
+                        entries.add(ModItems.STEEL_BADGE);
                     }).build());
 
     public static void registerItemGroups(){

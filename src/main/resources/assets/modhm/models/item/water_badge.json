@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "modhm:item/soul_badge"
+    "layer0": "modhm:item/water_badge"
   }
 }

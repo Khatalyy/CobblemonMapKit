@@ -16,12 +16,12 @@
   "msg.modhm.badge_case.missing": "You don't have a Badge Case in your inventory!",
 
 
-  "item.modhm.boulder_badge": "Boulder Badge",
-  "item.modhm.cascade_badge": "Cascade Badge",
+  "item.modhm.fire_badge": "Fire Badge",
+  "item.modhm.water_badge": "Water Badge",
   "item.modhm.thunder_badge": "Thunder Badge",
-  "item.modhm.rainbow_badge": "Rainbow Badge",
-  "item.modhm.soul_badge": "Soul Badge",
-  "item.modhm.marsh_badge": "Marsh Badge",
-  "item.modhm.volcano_badge": "Volcano Badge",
-  "item.modhm.earth_badge": "Earth Badge"
+  "item.modhm.grass_badge": "Grass Badge",
+  "item.modhm.draco_badge": "Draco Badge",
+  "item.modhm.ghost_badge": "Ghost Badge",
+  "item.modhm.fairy_badge": "Fairy Badge",
+  "item.modhm.steel_badge": "Steel Badge"
 }

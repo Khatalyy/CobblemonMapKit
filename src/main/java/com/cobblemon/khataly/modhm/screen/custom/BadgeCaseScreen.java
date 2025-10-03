@@ -44,11 +44,11 @@ public class BadgeCaseScreen extends Screen {
 
     // griglia
     private final int rows = 2, cols = 4;
-    private final float itemScale = 1.9f; // badge grandi
+    private final float itemScale = 1.8f; // badge grandi
     private final int   slotSize  = 40;
 
     // polish (nuovo sistema a metri di sfregamento)
-    private static final double POLISH_PIXELS_PER_SHINE   = 120.0; // ⬅️ aumenta per richiedere più strofinamenti
+    private static final double POLISH_PIXELS_PER_SHINE   = 110.0; // ⬅️ aumenta per richiedere più strofinamenti
     private static final long   POLISH_PACKET_COOLDOWN_MS = 95L;   // ⬅️ anti-spam pacchetti
     private static final int    POLISH_PACKET_AMOUNT      = 1;     // manda +1% per volta
 
@@ -186,7 +186,7 @@ public class BadgeCaseScreen extends Screen {
 
                     // suono (rate-limited indipendente)
                     if (now - lastPolishSoundMs > 150 && MinecraftClient.getInstance().player != null) {
-                        MinecraftClient.getInstance().player.playSound(SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, 1.0f, 1.1f);
+                        MinecraftClient.getInstance().player.playSound(SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, 1.5f, 1.1f);
                         lastPolishSoundMs = now;
                     }
 
@@ -428,7 +428,7 @@ public class BadgeCaseScreen extends Screen {
             default -> 0xFFFFC84A; // dorato
         };
 
-        int alpha = 200; // opacità
+        int alpha = 500; // opacità
         int argb  = (alpha << 24) | (color & 0xFFFFFF);
 
         long tick = System.currentTimeMillis() / 100;
@@ -486,10 +486,28 @@ public class BadgeCaseScreen extends Screen {
         }
         static Spark create(float x, float y) {
             Random r = new Random();
-            float ang = (float)(r.nextFloat() * Math.PI * 2);
-            float spd = 1.5f + r.nextFloat()*2.0f;
-            return new Spark(x, y, (float)Math.cos(ang)*spd, (float)Math.sin(ang)*spd, 1.2f, 350 + r.nextInt(200));
+
+            // direzione casuale
+            float ang = (float) (r.nextFloat() * Math.PI * 2f);
+
+            // 🔸 più veloce (prima ~1.5..3.5)
+            float spd = 2.4f + r.nextFloat() * 3.1f; // ≃ 2.4 .. 5.5 px/tempo
+
+            // 🔸 piccolo "calcio" verso l'alto per farle salire di più
+            float upKick = 0.8f + r.nextFloat() * 0.6f; // 0.8..1.4
+
+            float vx = (float) Math.cos(ang) * spd;
+            float vy = (float) Math.sin(ang) * spd - upKick;
+
+            // 🔸 meno gravità → arco più ampio (prima 1.2f)
+            float g = 0.85f;
+
+            // 🔸 vita leggermente più lunga (prima 350..550)
+            long lifeMs = 500 + r.nextInt(300); // 500..800 ms
+
+            return new Spark(x, y, vx, vy, g, lifeMs);
         }
+
     }
 
     private class CinematicInsert {

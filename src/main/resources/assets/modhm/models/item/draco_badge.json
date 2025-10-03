@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "modhm:item/volcano_badge"
+    "layer0": "modhm:item/draco_badge"
   }
 }

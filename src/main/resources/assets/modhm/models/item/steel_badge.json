@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "modhm:item/cascade_badge"
+    "layer0": "modhm:item/steel_badge"
   }
 }

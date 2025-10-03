@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "modhm:item/marsh_badge"
+    "layer0": "modhm:item/fairy_badge"
   }
 }

@@ -1,14 +1,14 @@
 {
   "replace": false,
   "values": [
-    {"id":"modhm:boulder_badge","required":false},
-    {"id":"modhm:cascade_badge","required":false},
+    {"id":"modhm:fire_badge","required":false},
+    {"id":"modhm:water_badge","required":false},
     {"id":"modhm:thunder_badge","required":false},
-    {"id":"modhm:rainbow_badge","required":false},
-    {"id":"modhm:soul_badge","required":false},
-    {"id":"modhm:marsh_badge","required":false},
-    {"id":"modhm:volcano_badge","required":false},
-    {"id":"modhm:earth_badge","required":false},
+    {"id":"modhm:grass_badge","required":false},
+    {"id":"modhm:ghost_badge","required":false},
+    {"id":"modhm:draco_badge","required":false},
+    {"id":"modhm:fairy_badge","required":false},
+    {"id":"modhm:steel_badge","required":false},
 
     {"id":"cohnto:medaglia_1","required":false},
     {"id":"cohnto:medaglia_2","required":false},

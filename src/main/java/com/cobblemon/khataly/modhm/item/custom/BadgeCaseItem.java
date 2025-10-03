@@ -68,7 +68,7 @@ public class BadgeCaseItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         List<BadgeData> data  = readBadgesDataAndDecay(stack);
-        int total = Registries.ITEM.getEntryList(BADGE_TAG).map(RegistryEntryList::size).orElse(8);
+        int total = 8;
         long collected = data.stream().filter(d -> d.id() != null).count();
 
         tooltip.add(Text.translatable("tooltip." + HMMod.MOD_ID + ".badge_case.count", collected, total));

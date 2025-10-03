@@ -10,28 +10,28 @@ import net.minecraft.util.Identifier;
 
 public class ModItems {
     // === MEDAGLIE (semplici, non impilabili) ===
-    public static final Item BOULDER_BADGE = registerItem("boulder_badge",
+    public static final Item FIRE_BADGE = registerItem("fire_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
-    public static final Item CASCADE_BADGE = registerItem("cascade_badge",
+    public static final Item WATER_BADGE = registerItem("water_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
     public static final Item THUNDER_BADGE = registerItem("thunder_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
-    public static final Item RAINBOW_BADGE = registerItem("rainbow_badge",
+    public static final Item GRASS_BADGE = registerItem("grass_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
-    public static final Item SOUL_BADGE = registerItem("soul_badge",
+    public static final Item GHOST_BADGE = registerItem("ghost_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
-    public static final Item MARSH_BADGE = registerItem("marsh_badge",
+    public static final Item DRACO_BADGE = registerItem("draco_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
-    public static final Item VOLCANO_BADGE = registerItem("volcano_badge",
+    public static final Item FAIRY_BADGE = registerItem("fairy_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
-    public static final Item EARTH_BADGE = registerItem("earth_badge",
+    public static final Item STEEL_BADGE = registerItem("steel_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
     // === PORTA MEDAGLIE (semplice item, unico) ===
