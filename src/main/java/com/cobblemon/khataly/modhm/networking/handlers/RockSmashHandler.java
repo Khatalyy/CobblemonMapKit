@@ -75,9 +75,7 @@ public final class RockSmashHandler {
         Pokemon pokemon = new Pokemon();
         pokemon.setSpecies(species);
         pokemon.setLevel(10);
-        pokemon.getMoveSet().setMove(2, Objects.requireNonNull(Moves.INSTANCE.getByName("rockthrow")).create());
-        pokemon.getMoveSet().setMove(3, Objects.requireNonNull(Moves.INSTANCE.getByName("rockthrow")).create());
-        pokemon.getMoveSet().setMove(1, Objects.requireNonNull(Moves.INSTANCE.getByName("selfdestruct")).create());
+        pokemon.initializeMoveset(true);
 
         PokemonEntity pokemonEntity = new PokemonEntity(player.getWorld(), pokemon, CobblemonEntities.POKEMON);
         pokemonEntity.setPokemon(pokemon);
