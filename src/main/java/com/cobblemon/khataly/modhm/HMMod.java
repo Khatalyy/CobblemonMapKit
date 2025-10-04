@@ -4,9 +4,11 @@ package com.cobblemon.khataly.modhm;
 import com.cobblemon.khataly.modhm.block.ModBlocks;
 import com.cobblemon.khataly.modhm.block.entity.ModBlockEntities;
 import com.cobblemon.khataly.modhm.command.ModCommands;
+import com.cobblemon.khataly.modhm.config.GrassZonesConfig;
 import com.cobblemon.khataly.modhm.config.ModConfig;
 import com.cobblemon.khataly.modhm.event.server.FlyTargetProximityWatcher;
 import com.cobblemon.khataly.modhm.event.server.ServerEventHandler;
+import com.cobblemon.khataly.modhm.event.server.custom.GrassEncounterTicker;
 import com.cobblemon.khataly.modhm.item.ModItemGroups;
 import com.cobblemon.khataly.modhm.item.ModItems;
 import com.cobblemon.khataly.modhm.config.FlyTargetConfig;
@@ -29,6 +31,7 @@ public class HMMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ModConfig.load();
+        GrassZonesConfig.load();
         FlyTargetConfig.load();
         ModSounds.registerSounds();
         ModScreenHandlers.registerScreenHandlers();
@@ -43,6 +46,7 @@ public class HMMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ModCommands.register(dispatcher);
         });
+        GrassEncounterTicker.register();
         ServerTickEvents.END_SERVER_TICK.register(ModNetworking::tick);
 
 

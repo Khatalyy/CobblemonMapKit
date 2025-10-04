@@ -3,12 +3,16 @@ package com.cobblemon.khataly.modhm.item;
 import com.cobblemon.khataly.modhm.HMMod;
 import com.cobblemon.khataly.modhm.item.custom.BadgeCaseItem;
 import com.cobblemon.khataly.modhm.item.custom.BadgeItem;
+import com.cobblemon.khataly.modhm.item.custom.GrassWandItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 public class ModItems {
+    public static final Item GRASS_WAND = registerItem("grass_wand",
+            new GrassWandItem(new Item.Settings().maxCount(1)));
+
     // === MEDAGLIE (semplici, non impilabili) ===
     public static final Item FIRE_BADGE = registerItem("fire_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));

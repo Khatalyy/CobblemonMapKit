@@ -8,6 +8,7 @@
   "itemgroup.modhm.modhm_group": "HM Mod Group",
 
   "item.modhm.badge_case": "Badge Case",
+  "item.modhm.grass_wand": "Grass Wand",
   "tooltip.modhm.badge_case.count": "%s / %s badges collected",
   "tooltip.modhm.badge_case.hint": "Right-click to open. Insert by using a badge. Shift + Right-click on a badge to remove.",
   "tooltip.modhm.badge_case.remove_hint": "Shift + Right-click to remove",

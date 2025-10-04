@@ -30,6 +30,7 @@ public class ModItemGroups {
                         entries.add(ModItems.GHOST_BADGE);
                         entries.add(ModItems.FAIRY_BADGE);
                         entries.add(ModItems.STEEL_BADGE);
+                        entries.add(ModItems.GRASS_WAND);
                     }).build());
 
     public static void registerItemGroups(){

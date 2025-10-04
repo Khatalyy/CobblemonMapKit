@@ -12,6 +12,7 @@ import net.minecraft.server.MinecraftServer;
 public class ModNetworking {
 
     public static void registerPackets() {
+        PayloadTypeRegistry.playC2S().register(PlaceGrassC2SPacket.ID, PlaceGrassC2SPacket.CODEC);
         // ======= tuoi pacchetti esistenti =======
         PayloadTypeRegistry.playS2C().register(AnimationHMPacketS2C.ID, AnimationHMPacketS2C.CODEC);
         PayloadTypeRegistry.playS2C().register(FlyMenuS2CPacket.ID,     FlyMenuS2CPacket.CODEC);
@@ -48,6 +49,7 @@ public class ModNetworking {
         FlashHandler.register();
         UltraHoleHandler.register();
         BadgeBoxHandler.register();
+        GrassWandHandler.register();
     }
 
     public static void tick(MinecraftServer server) {
