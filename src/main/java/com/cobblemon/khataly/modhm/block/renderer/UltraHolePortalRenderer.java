@@ -22,35 +22,44 @@ import org.joml.Vector3f;
 import java.util.Random;
 
 public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePortalEntity> {
+
     private static final Random RANDOM = new Random();
 
-    // ====== TUNING ======
-    // Interno: indaco/viola -> quasi nero, con variazioni MOSSE da noise (niente rotazione)
-    private static final float INNER_BASE_HUE = 0.80f; // centro gamma viola/indaco
-    private static final float INNER_HUE_RANGE = 0.06f; // +/- variazione di tinta
-    private static final float INNER_SAT_BASE  = 0.85f;
-    private static final float INNER_SAT_RANGE = 0.15f; // variazione di saturazione
-    private static final float INNER_VAL_EDGE  = 0.62f; // valore verso il bordo interno
-    private static final float INNER_VAL_CORE  = 0.05f; // quasi nero
+    // ====== PALETTE TIPO SCREENSHOT (bianco -> ciano -> rosa) ======
+    // Core quasi bianco
+    private static final float CORE_V = 1.00f; // value
+    private static final float CORE_S = 0.05f; // sat
 
-    // noise field (fbm) per il colore
-    private static final float NOISE_FREQ   = 1.6f;   // frequenza base sul disco
-    private static final float NOISE_SPEEDX = 0.20f;  // velocità scorrimento X
-    private static final float NOISE_SPEEDY = -0.15f; // velocità scorrimento Y
-    private static final int   NOISE_OCTAVES= 4;      // dettaglio
-    private static final float NOISE_GAIN   = 0.55f;  // ampiezza decrescente per ottava
-    private static final float NOISE_LACUNARITY = 2.1f; // moltiplicatore di frequenza
+    // Mid ciano
+    private static final float CYAN_H = 0.55f; // ~ciano
+    private static final float CYAN_S = 0.35f;
+    private static final float CYAN_V = 1.00f;
 
-    // Profondità visiva
+    // Outer rosa/magenta
+    private static final float PINK_H = 0.88f; // ~rosa/magenta
+    private static final float PINK_S = 0.45f;
+    private static final float PINK_V = 1.00f;
+
+    // Leggera “respirazione” di tinta
+    private static final float HUE_WOBBLE = 0.015f;
+
+    // Noise field per micro-variante
+    private static final float NOISE_FREQ   = 1.6f;
+    private static final float NOISE_SPEEDX = 0.20f;
+    private static final float NOISE_SPEEDY = -0.15f;
+    private static final int   NOISE_OCTAVES= 4;
+    private static final float NOISE_GAIN   = 0.55f;
+    private static final float NOISE_LACUNARITY = 2.1f;
+
+    // Profondità/mesh disco
     private static final int DEPTH_LAYERS   = 10;
     private static final float LAYER_Z_STEP = 0.12f;
-    private static final float LAYER_RADIUS_SHRINK = 0.07f; // r diminuisce per layer
+    private static final float LAYER_RADIUS_SHRINK = 0.07f;
     private static final int RING_STEPS     = 128;
     private static final int RADIAL_BANDS   = 10;
 
-    // Bordo particellare: viola scuro/mezzo nero
-    private static final float RING_BASE_HUE = 0.76f;
-    // =====================
+    // Particelle (tema pastello)
+    private static final float RING_BASE_HUE = 0.76f; // non più usato direttamente, ma lasciato se serve
 
     public UltraHolePortalRenderer(BlockEntityRendererFactory.Context ctx) {}
 
@@ -83,7 +92,7 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
             radius = maxRadiusFinal * progress;
             if (mc.player != null) {
                 float volume = 0.2f + 0.8f * progress;
-                float pitch  = 0.5f + 1.0f * progress;
+                float pitch  = 0.5f + progress;
                 mc.getSoundManager().play(PositionedSoundInstance.master(
                         SoundEvents.BLOCK_END_PORTAL_FRAME_FILL, volume, pitch));
             }
@@ -112,7 +121,7 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
         }
 
         // =========================================================
-        //        SUPERFICIE INTERNA (PIENA, NOISE-DRIVEN)
+        //        SUPERFICIE INTERNA (GRADIENT PASTELLO)
         // =========================================================
         matrices.push();
         matrices.translate(0.5, 0.5, 0.5);
@@ -126,7 +135,7 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
         for (int layer = 0; layer < DEPTH_LAYERS; layer++) {
             float zOffset  = -LAYER_Z_STEP * layer;
             float baseOuterR = Math.max(0.05f, radius * (1.0f - layer * LAYER_RADIUS_SHRINK));
-            if (baseOuterR <= 0.001f) continue;
+            if (baseOuterR <= 1e-3f) continue;
 
             // alpha leggermente decrescente
             int alpha = Math.max(60, 235 - layer * 18);
@@ -135,7 +144,7 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
                 float t0 = (float)b / RADIAL_BANDS;
                 float t1 = (float)(b + 1) / RADIAL_BANDS;
 
-                float rInner = baseOuterR * t0; // **nessuna deformazione geometrica**
+                float rInner = baseOuterR * t0;
                 float rOuter = baseOuterR * t1;
 
                 for (int i = 0; i < RING_STEPS; i++) {
@@ -152,39 +161,24 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
                     float x2i = (float)(Math.cos(a2) * rInner);
                     float y2i = (float)(Math.sin(a2) * rInner);
 
-                    // ---------------- COLORE DA NOISE ----------------
-                    // coord normalizzate sul disco ([-1,1]) e animate
+                    // ---------------- COLORE PASTELLO TIPO SCREENSHOT ----------------
+                    float tRadOuter = (rOuter / (baseOuterR + 1e-6f));
+                    float tRadInner = (rInner / (baseOuterR + 1e-6f));
+
                     float nx1o = (x1o / baseOuterR) * NOISE_FREQ + (float)time * NOISE_SPEEDX;
                     float ny1o = (y1o / baseOuterR) * NOISE_FREQ + (float)time * NOISE_SPEEDY;
                     float nx1i = (x1i / baseOuterR) * NOISE_FREQ + (float)time * NOISE_SPEEDX;
                     float ny1i = (y1i / baseOuterR) * NOISE_FREQ + (float)time * NOISE_SPEEDY;
 
-                    float fOuter = fbm(nx1o, ny1o, NOISE_OCTAVES, NOISE_GAIN, NOISE_LACUNARITY); // 0..1
-                    float fInner = fbm(nx1i, ny1i, NOISE_OCTAVES, NOISE_GAIN, NOISE_LACUNARITY);
+                    float fOuter = fbm(nx1o, ny1o);
+                    float fInner = fbm(nx1i, ny1i);
 
-                    // gradiente radiale di base (nero -> indaco) + variazione da noise
-                    float tRadOuter = (rOuter / (baseOuterR + 1e-6f));
-                    float tRadInner = (rInner / (baseOuterR + 1e-6f));
+                    int aOuter = Math.max(140, alpha);
+                    int aInner = Math.max(120, alpha - 10);
 
-                    float vOuter = mix(INNER_VAL_CORE, INNER_VAL_EDGE, tRadOuter);
-                    float vInner = mix(INNER_VAL_CORE, INNER_VAL_EDGE, tRadInner);
-
-                    // variazioni: hue +/- range, sat +/- range, value micro-contrasto
-                    float hueOuter = clamp01(INNER_BASE_HUE + (fOuter - 0.5f) * 2f * INNER_HUE_RANGE);
-                    float hueInner = clamp01(INNER_BASE_HUE + (fInner - 0.5f) * 2f * INNER_HUE_RANGE);
-
-                    float satOuter = clamp01(INNER_SAT_BASE + (fOuter - 0.5f) * 2f * INNER_SAT_RANGE);
-                    float satInner = clamp01(INNER_SAT_BASE + (fInner - 0.5f) * 2f * INNER_SAT_RANGE);
-
-                    // “chiazze” più scure con ulteriore fbm ad alta frequenza
-                    float blotO = fbm(nx1o*2.3f, ny1o*2.3f, 3, 0.6f, 2.1f) * 0.18f;
-                    float blotI = fbm(nx1i*2.3f, ny1i*2.3f, 3, 0.6f, 2.1f) * 0.18f;
-                    vOuter = clamp01(vOuter - blotO);
-                    vInner = clamp01(vInner - blotI);
-
-                    int colOuter = hsvToARGB(hueOuter, satOuter, vOuter, alpha);
-                    int colInner = hsvToARGB(hueInner, satInner, vInner, alpha);
-                    // --------------------------------------------------
+                    int colOuter = pastelPortalColor(tRadOuter, fOuter, (float)time, aOuter);
+                    int colInner = pastelPortalColor(tRadInner, fInner, (float)time, aInner);
+                    // ------------------------------------------------------------------
 
                     // UV block atlas (centro 0.5,0.5)
                     float u1o = white.getFrameU((x1o / (baseOuterR * 2f)) + 0.5f);
@@ -207,7 +201,7 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
         matrices.pop();
 
         // =========================================================
-        //                 PARTICELLE (bordo viola/nero)
+        //                 PARTICELLE (ciano/rosa)
         // =========================================================
         {
             int depthLayersParticles = 10;
@@ -260,15 +254,14 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
                     double vy = ny * inwardSpeed + tyv * swirlSpeed + (RANDOM.nextDouble() - 0.5) * jitter;
                     double vz = -depthPull + (RANDOM.nextDouble() - 0.5) * (jitter * 0.5);
 
-                    float hue = (RING_BASE_HUE + 0.01f * (float)Math.sin(time * 0.004 + i*0.3 + layer*0.4)) % 1.0f;
-                    Vector3f cBright = hsvToVec(hue, 0.90f, 0.45f);
-                    Vector3f cDark   = hsvToVec(hue, 0.85f, 0.18f);
+                    // alterna ciano ↔ rosa
+                    boolean cyanBand = (i + layer) % 2 == 0;
+                    float h = cyanBand ? CYAN_H : PINK_H;
+                    Vector3f cBright = hsvToVec((h + (float)Math.sin(time*0.3 + i*0.2) * 0.02f + 1f) % 1f,
+                            cyanBand ? 0.35f : 0.45f,
+                            1.00f);
+                    Vector3f cDark   = hsvToVec(h, 0.15f, 0.30f);
                     float scale = 0.9f + RANDOM.nextFloat() * 0.6f;
-
-                    if (RANDOM.nextFloat() < 0.20f) {
-                        cBright = hsvToVec(hue, 0.9f, 0.20f);
-                        cDark   = hsvToVec(hue, 0.8f, 0.05f);
-                    }
 
                     world.addParticle(new DustColorTransitionParticleEffect(cBright, cDark, scale), px, py, pz, vx, vy, vz);
 
@@ -281,16 +274,16 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
     }
 
     // -------------------- noise & utils --------------------
-    private static float fbm(float x, float y, int octaves, float gain, float lacunarity) {
+    private static float fbm(float x, float y) {
         float amp = 1.0f;
         float freq = 1.0f;
         float sum = 0.0f;
         float norm = 0.0f;
-        for (int o = 0; o < octaves; o++) {
+        for (int o = 0; o < UltraHolePortalRenderer.NOISE_OCTAVES; o++) {
             sum  += amp * smoothNoise(x * freq, y * freq);
             norm += amp;
-            amp  *= gain;
-            freq *= lacunarity;
+            amp  *= UltraHolePortalRenderer.NOISE_GAIN;
+            freq *= UltraHolePortalRenderer.NOISE_LACUNARITY;
         }
         return sum / Math.max(1e-6f, norm); // 0..1
     }
@@ -323,7 +316,6 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
 
     private static float smoothstep(float t) { return t * t * (3f - 2f * t); }
     private static float lerp(float a, float b, float t) { return a + (b - a) * t; }
-    private static float mix(float a, float b, float t) { return a + (b - a) * t; }
     private static float clamp01(float v) { return Math.max(0f, Math.min(1f, v)); }
 
     private static void putVertexUV(VertexConsumer buf, MatrixStack matrices,
@@ -335,6 +327,33 @@ public class UltraHolePortalRenderer implements BlockEntityRenderer<UltraHolePor
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(light)
                 .normal(0f, 0f, 1f);
+    }
+
+    /** Blend HSV con wrapping dell'hue. t in [0..1] */
+    private static int hsvMixARGB(float h1, float s1, float v1, float h2, float s2, float v2, float t, int a) {
+        float dh = ((h2 - h1 + 1f + 0.5f) % 1f) - 0.5f; // cammino più corto sull'anello
+        float h = (h1 + dh * t + 1f) % 1f;
+        float s = s1 + (s2 - s1) * t;
+        float v = v1 + (v2 - v1) * t;
+        return hsvToARGB(h, s, v, a);
+    }
+
+    /** Colore del portale: centro bianco, poi ciano, poi rosa. noise fa “respirare” la tinta. */
+    private static int pastelPortalColor(float tRad, float noise01, float time, int alpha) {
+        float wob = (float)Math.sin(time * 0.6 + tRad * 6.0) * HUE_WOBBLE;
+        if (tRad < 0.15f) {
+            float s = Math.max(0f, CORE_S + (noise01 - 0.5f) * 0.05f);
+            return hsvToARGB((CYAN_H + wob + 1f) % 1f, s, CORE_V, alpha);
+        } else if (tRad < 0.60f) {
+            float u = smoothstep((tRad - 0.15f) / 0.45f);
+            float h2 = (CYAN_H + wob + (noise01 - 0.5f) * 0.02f + 1f) % 1f;
+            return hsvMixARGB(CYAN_H + wob, 0.10f, 1.00f, h2, CYAN_S, CYAN_V, u, alpha);
+        } else {
+            float u = smoothstep((tRad - 0.60f) / 0.40f);
+            float h1 = (CYAN_H + wob + (noise01 - 0.5f) * 0.02f + 1f) % 1f;
+            float h2 = (PINK_H - wob + (noise01 - 0.5f) * 0.02f + 1f) % 1f;
+            return hsvMixARGB(h1, CYAN_S, CYAN_V, h2, PINK_S, PINK_V, u, alpha);
+        }
     }
 
     private static Vector3f hsvToVec(float h, float s, float v) {
