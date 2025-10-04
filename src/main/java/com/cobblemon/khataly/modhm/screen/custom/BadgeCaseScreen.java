@@ -3,6 +3,7 @@ package com.cobblemon.khataly.modhm.screen.custom;
 import com.cobblemon.khataly.modhm.HMMod;
 import com.cobblemon.khataly.modhm.networking.packet.badgebox.EjectBadgeC2SPacket;
 import com.cobblemon.khataly.modhm.networking.packet.badgebox.PolishBadgeC2SPacket;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -13,16 +14,24 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.RotationAxis;
+import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 /**
- * BadgeCaseScreen – lucidatura lenta a “metri” + livelli stelle.
+ * BadgeCaseScreen – lucidatura a "metri" con spark visibili (glow), fasi/tiers e decadimento dell'effetto.
+ *
+ * Modifiche principali rispetto alla tua versione:
+ *  - Spark con disegno a stella scalabile (non più 1×1 px) + BLEND ADDITIVO per "glow".
+ *  - Emissione controllata da un "polishHeat" per-slot che sale mentre lucidi e decade nel tempo.
+ *  - Look e densità delle spark legati al tier (in base allo shine%).
+ *  - Piccoli ritocchi SFX (shake e suono) invariati, ma resa visiva molto più leggibile.
  */
 public class BadgeCaseScreen extends Screen {
-    // ---- Theme (estratto dal tuo mockup)
+    /* ==== Theme (estratto dal mockup) ==== */
     private static final int GOLD_LIGHT = 0xFFF3DDA4;
     private static final int GOLD_BASE  = 0xFFE0C06A;
     private static final int GOLD_DARK  = 0xFF6A5220;
@@ -30,9 +39,9 @@ public class BadgeCaseScreen extends Screen {
     private static final int SHADOW_30  = 0x4D000000;
     private static final int SHADOW_50  = 0x80000000;
 
-
     private static final Identifier BG_TEX = Identifier.of(HMMod.MOD_ID, "textures/gui/badge_case.png");
 
+    /* ==== Dati ==== */
     private List<ItemStack> badges;
     private List<Integer>   shines; // 0..100
     private int total;
@@ -47,19 +56,23 @@ public class BadgeCaseScreen extends Screen {
     private final float itemScale = 1.8f; // badge grandi
     private final int   slotSize  = 40;
 
-    // polish (nuovo sistema a metri di sfregamento)
-    private static final double POLISH_PIXELS_PER_SHINE   = 110.0; // ⬅️ aumenta per richiedere più strofinamenti
-    private static final long   POLISH_PACKET_COOLDOWN_MS = 95L;   // ⬅️ anti-spam pacchetti
-    private static final int    POLISH_PACKET_AMOUNT      = 1;     // manda +1% per volta
+    // polish (sistema a metri + rate-limit pacchetti)
+    private static final double POLISH_PIXELS_PER_SHINE   = 110.0; // più alto => serve più strofinare per +1%
+    private static final long   POLISH_PACKET_COOLDOWN_MS = 95L;   // anti-spam
+    private static final int    POLISH_PACKET_AMOUNT      = 1;     // +1% per volta
 
     private int  polishingSlot = -1;
     private double lastX, lastY;
     private long lastPolishSoundMs = 0;
 
-    /** progresso locale per-slot (quanti “pixel sfregati” accumulati) */
+    /** progresso locale per-slot (quanti pixel sfregati accumulati) */
     private final List<Double> polishAccum = new ArrayList<>();
     /** cooldown ultimo pacchetto per-slot */
     private final List<Long>   lastPacketSentMs = new ArrayList<>();
+
+    /* ==== Nuovi: calore e emissione ==== */
+    private final List<Float> polishHeat = new ArrayList<>();   // 0..1 (sale con drag, scende nel tempo)
+    private final List<Long>  lastEmitMs = new ArrayList<>();   // per controllare il rate delle spark
 
     // animazione inserimento “cinematica”
     private Identifier pendingAnimId = null;
@@ -193,7 +206,11 @@ public class BadgeCaseScreen extends Screen {
                     // feedback locale: +1% (coerente con amount=1)
                     int curr = polishingSlot < shines.size() ? shines.get(polishingSlot) : 0;
                     if (polishingSlot < shines.size()) shines.set(polishingSlot, Math.min(100, curr + POLISH_PACKET_AMOUNT));
-                    spawnSlotSparks(polishingSlot, 2);
+
+                    // bump heat e fiammata di spark
+                    float heat = Math.min(1f, polishHeat.get(polishingSlot) + 0.25f);
+                    polishHeat.set(polishingSlot, heat);
+                    spawnSlotSparks(polishingSlot, 3);
                 } else {
                     // ancora in cooldown: esci dal while per non “bruciare” acc
                     break;
@@ -202,6 +219,10 @@ public class BadgeCaseScreen extends Screen {
                 now = System.currentTimeMillis();
                 lastPkt = lastPacketSentMs.get(polishingSlot);
             }
+
+            // heat base da movimento continuo
+            float heat = Math.min(1f, polishHeat.get(polishingSlot) + (float)(dist / 120.0));
+            polishHeat.set(polishingSlot, heat);
 
             polishAccum.set(polishingSlot, acc);
             return true;
@@ -216,7 +237,7 @@ public class BadgeCaseScreen extends Screen {
     }
 
     private int hoveredSlotIndex(int mx, int my){
-        // ⬇️ SEMPRE tutti gli 8 slot, indipendentemente da `total`
+        // SEMPRE tutti gli 8 slot, indipendentemente da `total`
         for (int i = 0; i < rows * cols; i++) {
             int[] b = slotBounds(i);
             if (mx>=b[0] && mx<b[2] && my>=b[1] && my<b[3]) return i;
@@ -262,9 +283,11 @@ public class BadgeCaseScreen extends Screen {
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        long now = System.currentTimeMillis();
+
         // shake globale
         ctx.getMatrices().push();
-        if (System.currentTimeMillis() < screenShakeUntil) {
+        if (now < screenShakeUntil) {
             float sx = (rnd.nextFloat() - 0.5f) * 2f;
             float sy = (rnd.nextFloat() - 0.5f) * 2f;
             ctx.getMatrices().translate(sx, sy, 0);
@@ -279,14 +302,37 @@ public class BadgeCaseScreen extends Screen {
         }
 
         // titolo
-        drawGoldTitle(ctx, Text.translatable("item." + HMMod.MOD_ID + ".badge_case")); // o Text.literal("GYM BADGES")
+        drawGoldTitle(ctx, Text.translatable("item." + HMMod.MOD_ID + ".badge_case"));
 
-
-        // ⬇️ Griglia 2×4 SEMPRE visibile, ignorando `total`
+        // griglia 2×4
         for (int i = 0; i < rows * cols; i++) {
             int[] b = slotBounds(i);
             ctx.fill(b[0], b[1], b[2], b[3], 0x22000000);
             ctx.fill(b[0]+1, b[1]+1, b[2]-1, b[3]-1, 0x22000000);
+        }
+
+        // decay heat + emissione spark ambient in base al calore e al tier
+        for (int i = 0; i < Math.min(badges.size(), rows*cols); i++) {
+            float heat = polishHeat.get(i);
+
+            // decadimento dolce: ~1.2s per tornare a 0 (circa)
+            float dt = (delta <= 0 ? 1f/60f : delta / 20f); // fallback se delta=0
+            heat = Math.max(0f, heat - dt * 0.8f);
+            polishHeat.set(i, heat);
+
+            if (heat > 0f) {
+                long last = lastEmitMs.get(i);
+                long interval = (long) (220 - 170 * heat); // 220ms → 50ms
+                if (now - last >= interval) {
+                    int bursts = 1 + (heat > 0.5f ? 1 : 0);
+                    int shine = (i < shines.size() ? shines.get(i) : 0);
+                    ShineTier tier = tierFor(shine);
+                    if (tier == ShineTier.T3) bursts++;
+                    if (tier == ShineTier.T4) bursts += 2;
+                    spawnSlotSparks(i, bursts);
+                    lastEmitMs.set(i, now);
+                }
+            }
         }
 
         // items statici
@@ -297,14 +343,22 @@ public class BadgeCaseScreen extends Screen {
             int[] p = itemDrawPos(i);
 
             if (cinematic != null && i == cinematic.slotIndex) {
-                // lo slot target lo lascio “vuoto”: la medaglia cinematica passa sopra
+                // lo slot target resta libero: la medaglia cinematica passa sopra
             } else {
+                // se heat > 0, piccolo disco scuro dietro per aumentare contrasto spark
+                if (polishHeat.get(i) > 0f) {
+                    int cx = p[0] + itemPx/2;
+                    int cy = p[1] + itemPx/2;
+                    drawSoftDisc(ctx, cx, cy, (int)(itemPx*0.6f), 0x22000000);
+                }
+
                 drawItemScaled(ctx, st, p[0], p[1]);
                 int shine = (i < shines.size() ? shines.get(i) : 0);
                 if (shine > 0) drawStarsLeveled(ctx, p[0], p[1], itemPx, shine);
             }
         }
 
+        // cinematic on top
         if (cinematic != null) {
             if (!cinematic.render(ctx)) {
                 int finishedSlot = cinematic.slotIndex;
@@ -318,7 +372,7 @@ public class BadgeCaseScreen extends Screen {
             }
         }
 
-        // sparks
+        // sparks (glow additive)
         renderSparks(ctx);
 
         // tooltip
@@ -350,48 +404,40 @@ public class BadgeCaseScreen extends Screen {
         ctx.drawItemInSlot(this.textRenderer, st, dx, dy);
         ctx.getMatrices().pop();
     }
+
     private void drawGoldTitle(DrawContext ctx, Text title) {
-        // dimensioni più compatte e più in alto
-        final int sideMargin = 40;                 // margine laterale
-        final int barW = panelW - sideMargin * 2;  // più corto
+        final int sideMargin = 40;
+        final int barW = panelW - sideMargin * 2;
         final int barH = 22;
         final int barX = left + sideMargin;
-        final int barY = top + 6;                  // più vicino al bordo alto
+        final int barY = top + 6;
 
-        // disegna SOPRA alla texture di sfondo
         ctx.getMatrices().push();
         ctx.getMatrices().translate(0, 0, 200f);
 
-        // ombra morbida di caduta
         ctx.fill(barX + 2, barY + 3, barX + barW + 2, barY + barH + 3, SHADOW_30);
-
-        // piastra piena (niente trasparenza)
         ctx.fill(barX, barY, barX + barW, barY + barH, CREAM_SOLID);
 
-        // bordo “doppio” oro
-        // esterno scuro
+        // bordo
         ctx.fill(barX, barY, barX + barW, barY + 1, GOLD_DARK);
         ctx.fill(barX, barY + barH - 1, barX + barW, barY + barH, GOLD_DARK);
         ctx.fill(barX, barY, barX + 1, barY + barH, GOLD_DARK);
         ctx.fill(barX + barW - 1, barY, barX + barW, barY + barH, GOLD_DARK);
-        // fillet interno
         ctx.fill(barX + 1, barY + 1, barX + barW - 1, barY + 2, GOLD_LIGHT);
         ctx.fill(barX + 1, barY + barH - 2, barX + barW - 1, barY + barH - 1, GOLD_BASE);
 
-        // testo centrato con outline + ombra
         String s = title.getString();
         int tw = this.textRenderer.getWidth(s);
         int tx = barX + (barW - tw) / 2;
         int ty = barY + (barH - 8) / 2;
 
-        ctx.drawText(this.textRenderer, s, tx + 1, ty + 1, SHADOW_50, false); // ombra
+        ctx.drawText(this.textRenderer, s, tx + 1, ty + 1, SHADOW_50, false);
         ctx.drawText(this.textRenderer, s, tx - 1, ty, GOLD_DARK, false);
         ctx.drawText(this.textRenderer, s, tx + 1, ty, GOLD_DARK, false);
         ctx.drawText(this.textRenderer, s, tx, ty - 1, GOLD_DARK, false);
         ctx.drawText(this.textRenderer, s, tx, ty + 1, GOLD_DARK, false);
         ctx.drawText(this.textRenderer, s, tx, ty, GOLD_BASE, false);
 
-        // piccole stelle decorative (dorate) ai lati
         long t = System.currentTimeMillis() / 120;
         boolean blink = (t % 2) == 0;
         int decoY = ty - 1;
@@ -405,69 +451,159 @@ public class BadgeCaseScreen extends Screen {
         ctx.getMatrices().pop();
     }
 
-
-    /** stelle a livelli – niente overlay bianco */
+    /** stelle a livelli – effetto statico sopra l'icona */
     private void drawStarsLeveled(DrawContext ctx, int x, int y, int size, int shine) {
-        // livelli
         final int level =
                 (shine < 25) ? 0 :
                         (shine < 50) ? 1 :
                                 (shine < 75) ? 2 :
                                         (shine < 90) ? 3 : 4;
-
         if (level == 0) return;
 
         int baseCount  = switch (level) { case 1 -> 2; case 2 -> 3; case 3 -> 4; default -> 6; };
-        int extraFromShine = Math.max(0, (shine - 25) / 15); // aggiustino progressivo
+        int extraFromShine = Math.max(0, (shine - 25) / 15);
         int stars = Math.min(10, baseCount + extraFromShine);
 
         int color = switch (level) {
-            case 1 -> 0xFFEEF7FF; // bianco freddo tenue
-            case 2 -> 0xFFFFFFFF; // bianco pieno
-            case 3 -> 0xFFFFE3A0; // caldo
-            default -> 0xFFFFC84A; // dorato
+            case 1 -> 0xFFEEF7FF;
+            case 2 -> 0xFFFFFFFF;
+            case 3 -> 0xFFFFE3A0;
+            default -> 0xFFFFC84A;
         };
 
-        int alpha = 500; // opacità
+        int alpha = 200; // opacità
         int argb  = (alpha << 24) | (color & 0xFFFFFF);
 
         long tick = System.currentTimeMillis() / 100;
         for (int i = 0; i < stars; i++) {
-            if (((tick + i) % 3) != 0) continue; // “intermittenti”
-
+            if (((tick + i) % 3) != 0) continue;
             int sx = x + 3 + rnd.nextInt(Math.max(1, size - 6));
             int sy = y + 3 + rnd.nextInt(Math.max(1, size - 6));
-
-            // dimensione cresce col livello
-            int s = (level >= 4) ? 2 : (level >= 3 ? 2 : 1);
-
-            // piccola “croce” scintillante
-            ctx.fill(sx,   sy,   sx + s,   sy + s,   argb);
-            ctx.fill(sx+2, sy,   sx+2+s,   sy + s,   argb);
-            ctx.fill(sx+1, sy-1, sx+1+s-1, sy + s+1, argb);
+            int r = (level >= 4) ? 2 : (level >= 3 ? 2 : 1);
+            drawStar5(ctx, sx, sy, r, argb);
         }
+    }
+
+    /* ===== Spark System (glow + additive) ===== */
+
+    private enum ShineTier { T0, T1, T2, T3, T4 }
+
+    private ShineTier tierFor(int shine) {
+        if (shine < 25) return ShineTier.T0;
+        if (shine < 50) return ShineTier.T1;
+        if (shine < 75) return ShineTier.T2;
+        if (shine < 90) return ShineTier.T3;
+        return ShineTier.T4;
+    }
+
+    private int tierColor(ShineTier t){
+        return switch (t) {
+            case T1 -> 0xEEF7FF; // freddo tenue
+            case T2 -> 0xFFFFFF; // bianco
+            case T3 -> 0xFFE3A0; // caldo
+            case T4 -> 0xFFC84A; // oro
+            default -> 0xFFFFFF;
+        };
+    }
+
+    private int tierSize(ShineTier t){
+        return switch (t) {
+            case T1 -> 1;
+            case T2 -> 2;
+            case T3 -> 2;
+            case T4 -> 3;
+            default -> 1;
+        };
+    }
+
+    private int tierAlpha(ShineTier t){
+        return switch (t) {
+            case T1 -> 140;
+            case T2 -> 190;
+            case T3 -> 220;
+            case T4 -> 255;
+            default -> 120;
+        };
     }
 
     private void spawnSlotSparks(int slotIndex, int count) {
         int[] p = itemDrawPos(slotIndex);
         int size = Math.round(16 * itemScale);
+
+        int shine = (slotIndex < shines.size() ? shines.get(slotIndex) : 0);
+        ShineTier tier = tierFor(shine);
+        int color = tierColor(tier);
+        int alpha = tierAlpha(tier);
+        int baseSize = tierSize(tier);
+
+        // piccolo cap per performance
+        if (sparks.size() > 800) {
+            // rimuovi le più vecchie
+            int toRemove = sparks.size() - 800 + (count * 2);
+            if (toRemove > 0) sparks.subList(0, Math.min(toRemove, sparks.size())).clear();
+        }
+
         for (int i = 0; i < count; i++) {
-            sparks.add(Spark.create(p[0] + size/2f, p[1] + size/2f));
+            float cx = p[0] + size/2f + (rnd.nextFloat()-0.5f) * (size * 0.35f);
+            float cy = p[1] + size/2f + (rnd.nextFloat()-0.5f) * (size * 0.35f);
+            int s = baseSize + (rnd.nextInt(2));
+            sparks.add(Spark.create(cx, cy, color, alpha, s));
         }
     }
 
     private void renderSparks(DrawContext ctx) {
         long now = System.currentTimeMillis();
+
+        // abilita additive blending (glow)
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
+
         sparks.removeIf(s -> {
-            float t = (now - s.t0) / (float)s.lifeMs;
+            float t = (now - s.t0) / (float) s.lifeMs;
             if (t >= 1f) return true;
+
+            // easing opacità + pulsazione dimensione
+            float fade = 1f - t;
+            float pulse = 0.9f + 0.3f * (float)Math.sin((now - s.t0) * 0.02);
+
             float x = s.x + s.vx * t;
             float y = s.y + s.vy * t + 0.5f * s.g * t * t;
-            int a = (int)(255 * (1f - t));
-            int c = (a << 24) | 0xFFFFFF;
-            ctx.fill((int)x, (int)y, (int)x+1, (int)y+1, c);
+
+            int a = Math.min(255, Math.max(0, (int)(fade * s.alpha)));
+            int argb = (a << 24) | (s.color & 0xFFFFFF);
+
+            drawStar5(ctx, (int)x, (int)y, (int)(s.size * pulse), argb);
             return false;
         });
+
+        // ripristina blending standard
+        RenderSystem.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        RenderSystem.disableBlend();
+    }
+
+    /** stella semplice (croce + diagonali), scalabile */
+    private void drawStar5(DrawContext ctx, int cx, int cy, int size, int argb) {
+        int r = Math.max(1, size);
+        // croce
+        ctx.fill(cx - r, cy,     cx + r + 1, cy + 1, argb);
+        ctx.fill(cx,     cy - r, cx + 1,     cy + r + 1, argb);
+        // diagonali sottili
+        for (int i = -r; i <= r; i++) {
+            ctx.fill(cx + i, cy + i, cx + i + 1, cy + i + 1, argb);
+            ctx.fill(cx + i, cy - i, cx + i + 1, cy - i + 1, argb);
+        }
+    }
+
+    /** piccolo disco sfumato (approssimato) per dare contrasto */
+    private void drawSoftDisc(DrawContext ctx, int cx, int cy, int radius, int argb) {
+        // semplice cerchio "pixel" (non anti-aliased), sufficiente per un leggero alone
+        int r2 = radius * radius;
+        for (int y = -radius; y <= radius; y++) {
+            int yy = y*y;
+            for (int x = -radius; x <= radius; x++) {
+                if (x*x + yy <= r2) ctx.fill(cx + x, cy + y, cx + x + 1, cy + y + 1, argb);
+            }
+        }
     }
 
     /* =================== Classi animazione =================== */
@@ -479,35 +615,27 @@ public class BadgeCaseScreen extends Screen {
 
     private static class Spark {
         final float x, y, vx, vy, g;
-        final long t0;
-        final long lifeMs;
-        private Spark(float x, float y, float vx, float vy, float g, long lifeMs) {
-            this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.g=g; this.lifeMs=lifeMs; this.t0=System.currentTimeMillis();
+        final long t0, lifeMs;
+        final int color;   // 0xRRGGBB (senza alpha)
+        final int alpha;   // 0..255
+        final int size;    // raggio base
+
+        private Spark(float x, float y, float vx, float vy, float g, long lifeMs, int color, int alpha, int size) {
+            this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.g=g;
+            this.lifeMs=lifeMs; this.t0=System.currentTimeMillis();
+            this.color=color; this.alpha=alpha; this.size=size;
         }
-        static Spark create(float x, float y) {
+        static Spark create(float x, float y, int color, int alpha, int size) {
             Random r = new Random();
-
-            // direzione casuale
             float ang = (float) (r.nextFloat() * Math.PI * 2f);
-
-            // 🔸 più veloce (prima ~1.5..3.5)
             float spd = 2.4f + r.nextFloat() * 3.1f; // ≃ 2.4 .. 5.5 px/tempo
-
-            // 🔸 piccolo "calcio" verso l'alto per farle salire di più
             float upKick = 0.8f + r.nextFloat() * 0.6f; // 0.8..1.4
-
             float vx = (float) Math.cos(ang) * spd;
             float vy = (float) Math.sin(ang) * spd - upKick;
-
-            // 🔸 meno gravità → arco più ampio (prima 1.2f)
-            float g = 0.85f;
-
-            // 🔸 vita leggermente più lunga (prima 350..550)
-            long lifeMs = 500 + r.nextInt(300); // 500..800 ms
-
-            return new Spark(x, y, vx, vy, g, lifeMs);
+            float g  = 0.85f;
+            long life = 600 + r.nextInt(400); // 600..1000 ms
+            return new Spark(x, y, vx, vy, g, life, color, alpha, size);
         }
-
     }
 
     private class CinematicInsert {
@@ -588,7 +716,7 @@ public class BadgeCaseScreen extends Screen {
         ctx.getMatrices().push();
         ctx.getMatrices().translate(x, y, 300f);
         ctx.getMatrices().translate(8, 8, 0);
-        ctx.getMatrices().multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Z.rotation(rotZ));
+        ctx.getMatrices().multiply(RotationAxis.POSITIVE_Z.rotation(rotZ));
         ctx.getMatrices().scale(scale, scale, 1f);
         ctx.getMatrices().translate(-8, -8, 0);
         ctx.drawItem(st, 0, 0);
@@ -602,7 +730,11 @@ public class BadgeCaseScreen extends Screen {
         int n = badges.size();
         while (polishAccum.size() < n) polishAccum.add(0.0);
         while (lastPacketSentMs.size() < n) lastPacketSentMs.add(0L);
+        while (polishHeat.size() < n) polishHeat.add(0f);
+        while (lastEmitMs.size() < n) lastEmitMs.add(0L);
         if (polishAccum.size() > n) polishAccum.subList(n, polishAccum.size()).clear();
         if (lastPacketSentMs.size() > n) lastPacketSentMs.subList(n, lastPacketSentMs.size()).clear();
+        if (polishHeat.size() > n) polishHeat.subList(n, polishHeat.size()).clear();
+        if (lastEmitMs.size() > n) lastEmitMs.subList(n, lastEmitMs.size()).clear();
     }
 }
