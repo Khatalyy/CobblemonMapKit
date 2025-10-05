@@ -59,6 +59,21 @@ public class LevelCapCommands {
                         })
                 )
         );
+        // ===== Admin flags =====
+
+        // /levelcap clamp-gained <true|false>
+        root.then(CommandManager.literal("clamp-gained")
+                .requires(src -> src.hasPermissionLevel(2))
+                .then(CommandManager.argument("value", BoolArgumentType.bool())
+                        .executes(ctx -> {
+                            boolean v = BoolArgumentType.getBool(ctx, "value");
+                            LevelCapConfig.setClampGainedOverCap(v);
+                            ctx.getSource().sendMessage(Text.literal("§aClamp on gained over cap = §e" + v + "§a."));
+                            return 1;
+                        })
+                )
+        );
+
 
         // ===== Public: /levelcap info =====
         root.then(CommandManager.literal("info")
@@ -80,6 +95,7 @@ public class LevelCapCommands {
                             "§7Base: §f" + LevelCapConfig.getBaseCap()
                                     + " §7| Bypass shiny: §f" + LevelCapConfig.isBypassIfShiny()
                                     + " §7| MasterBall bypass: §f" + LevelCapConfig.isBypassOnMasterBall()
+                                    + " §7| Clamp gained: §f" + LevelCapConfig.isClampGainedOverCap()
                     ));
                     return 1;
                 })

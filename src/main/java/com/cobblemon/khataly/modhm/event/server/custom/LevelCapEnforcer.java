@@ -25,36 +25,46 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Level cap enforcement:
- *  - EXP: blocco/riduzione fino al cap per qualsiasi fonte (battaglie, caramelle S/XS/L/XL ecc.).
- *  - Cattura: shiny/master possono bypassare se abilitati (pre-hit). Post-capture clamp se necessario.
- *  - Clamp di sicurezza su LevelUp e su Pokémon ottenuti fuori dalla cattura.
- * Rispetta LevelCapConfig.isEnabled(): se false non fa nulla.
+ * Level cap enforcement (2025-10):
+ *  - EXP: blocco/riduzione fino al cap (battaglie, caramelle, ecc.).
+ *  - Capture PRE-hit: se target sopra cap e senza bypass (shiny/master) → blocca la cattura.
+ *    Se bypass (shiny/master), tagga la UUID dell'entità per saltare il clamp in GAINED.
+ *  - Captured POST: nessun clamp (evita desync/NPE client).
+ *  - Gained: clamp solo qui se sopra cap e la config lo richiede, salvo bypass shiny/master/tag.
+ *  - LevelUp: safety clamp.
  */
 public final class LevelCapEnforcer {
 
     private LevelCapEnforcer() {}
 
-    // Finestra per ricordare un bypass valido appena riconosciuto
-    private static final long BYPASS_WINDOW_MS = 5000L;
-    private static final Map<UUID, Long> recentMasterBypass = new ConcurrentHashMap<>();
-    private static final Map<UUID, Long> recentShinyBypass  = new ConcurrentHashMap<>();
+    /** Finestra extra di safety per il bypass MasterBall (fallback). */
+    private static final long BYPASS_WINDOW_MS = 20000L;
 
+    /** playerUUID -> deadline ms per bypass master (fallback temporale) */
+    private static final Map<UUID, Long> recentMasterBypass = new ConcurrentHashMap<>();
+
+    /** playerUUID -> set delle UUID delle entità catturate con bypass (tag forte, senza scadenza) */
+    private static final Map<UUID, Set<UUID>> captureBypass = new ConcurrentHashMap<>();
+
+    // =========================================================
+    //                        REGISTER
+    // =========================================================
     public static void register() {
         CobblemonEvents.EXPERIENCE_GAINED_EVENT_PRE.subscribe(Priority.HIGHEST, e -> { onExperienceGainedPre(e); return Unit.INSTANCE; });
         CobblemonEvents.EXPERIENCE_CANDY_USE_PRE.subscribe(Priority.HIGHEST, e -> { onExperienceCandyPre(e); return Unit.INSTANCE; });
         CobblemonEvents.LEVEL_UP_EVENT.subscribe(Priority.NORMAL, e -> { onLevelUpPost(e); return Unit.INSTANCE; });
 
         CobblemonEvents.THROWN_POKEBALL_HIT.subscribe(Priority.HIGHEST, e -> { onPokeballHit(e); return Unit.INSTANCE; });
-        CobblemonEvents.POKEMON_CAPTURED.subscribe(Priority.NORMAL, e -> { onPokemonCaptured(e); return Unit.INSTANCE; });
+        CobblemonEvents.POKEMON_CAPTURED.subscribe(Priority.NORMAL, e -> { onPokemonCaptured(e); return Unit.INSTANCE; }); // no-op (solo per completezza/log futuro)
 
         CobblemonEvents.POKEMON_GAINED.subscribe(Priority.NORMAL, e -> { onPokemonGained(e); return Unit.INSTANCE; });
     }
 
-    // ==================== EXP ====================
-
+    // =========================================================
+    //                           EXP
+    // =========================================================
     private static void onExperienceGainedPre(ExperienceGainedPreEvent event) {
-        if (!LevelCapConfig.isEnabled()) return; // guard
+        if (!LevelCapConfig.isEnabled()) return;
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -88,7 +98,7 @@ public final class LevelCapEnforcer {
     }
 
     private static void onExperienceCandyPre(ExperienceCandyUseEvent.Pre event) {
-        if (!LevelCapConfig.isEnabled()) return; // guard
+        if (!LevelCapConfig.isEnabled()) return;
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -103,7 +113,7 @@ public final class LevelCapEnforcer {
     }
 
     private static void onLevelUpPost(LevelUpEvent event) {
-        if (!LevelCapConfig.isEnabled()) return; // guard
+        if (!LevelCapConfig.isEnabled()) return;
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -127,20 +137,21 @@ public final class LevelCapEnforcer {
         }
     }
 
-    // ==================== CAPTURE ====================
-
+    // =========================================================
+    //                       CAPTURE (PRE)
+    // =========================================================
     private static void onPokeballHit(ThrownPokeballHitEvent event) {
-        if (!LevelCapConfig.isEnabled()) return; // guard
+        if (!LevelCapConfig.isEnabled()) return;
+
         var pokeBall = event.getPokeBall();
         var targetEntity = event.getPokemon();
         var ownerEntity = pokeBall.getOwner();
-
         if (!(ownerEntity instanceof ServerPlayerEntity player)) return;
 
         int lvl = getPokemonLevel(targetEntity);
         int cap = LevelCapService.getEffectiveCap(player);
 
-        boolean shinyAllowed  = isPokemonShiny(targetEntity) && LevelCapConfig.isBypassIfShiny();
+        boolean shinyAllowed  = LevelCapConfig.isBypassIfShiny() && isPokemonShiny(targetEntity);
         boolean masterAllowed = LevelCapConfig.isBypassOnMasterBall() && isMasterBall(pokeBall);
 
         if (lvl > cap && !(shinyAllowed || masterAllowed)) {
@@ -149,75 +160,122 @@ public final class LevelCapEnforcer {
             return;
         }
 
-        long until = System.currentTimeMillis() + BYPASS_WINDOW_MS;
-        if (lvl > cap && masterAllowed) {
-            recentMasterBypass.put(player.getUuid(), until);
-            notify(player, "§aCapture bypass (Master Ball): level " + lvl + " allowed.");
-        } else if (lvl > cap) {
-            recentShinyBypass.put(player.getUuid(), until);
-            notify(player, "§aCapture bypass (Shiny Pokémon): level " + lvl + " allowed.");
-        }
-    }
-
-    private static void onPokemonCaptured(PokemonCapturedEvent event) {
-        if (!LevelCapConfig.isEnabled()) return; // guard
-        Object pokemon = event.getPokemon();
-        ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
-        if (owner == null) return;
-
-        int lvl = getPokemonLevel(pokemon);
-        int cap = LevelCapService.getEffectiveCap(owner);
-
-        boolean masterBypass = consumeIfActive(recentMasterBypass, owner.getUuid());
-        boolean shinyBypass  = consumeIfActive(recentShinyBypass,  owner.getUuid());
-        boolean bypass = masterBypass || shinyBypass;
-
-        if (lvl > cap && !bypass) {
-            MinecraftServer server = owner.getServer();
-            if (server != null) {
-                server.execute(() -> {
-                    if (setPokemonLevel(pokemon, cap)) {
-                        notify(owner, "§cPokémon level clamped to " + cap + ".");
-                    }
-                });
-            }
-        }
-    }
-
-    // ==================== NON-CAPTURE GAINS ====================
-
-    private static void onPokemonGained(PokemonGainedEvent event) {
-        if (!LevelCapConfig.isEnabled()) return; // guard
-        Object pokemon = event.getPokemon();
-        ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
-        if (owner == null) return;
-
-        int lvl = getPokemonLevel(pokemon);
-        int cap = LevelCapService.getEffectiveCap(owner);
-
+        // Se è stato consentito (shiny/master) e sopra cap → tagga la UUID dell'entità
         if (lvl > cap) {
-            MinecraftServer server = owner.getServer();
-            if (server != null) {
-                server.execute(() -> {
-                    if (setPokemonLevel(pokemon, cap)) {
-                        notify(owner, "§cPokémon level clamped to " + cap + ".");
-                    }
-                });
+            UUID targetId = getEntityUuid(targetEntity);
+            if (targetId != null) {
+                captureBypass.computeIfAbsent(player.getUuid(), k -> ConcurrentHashMap.newKeySet()).add(targetId);
+            }
+            if (masterAllowed) {
+                // Fallback temporale: se per qualsiasi motivo non combaciano le UUID, teniamo anche una finestra di 20s.
+                recentMasterBypass.put(player.getUuid(), System.currentTimeMillis() + BYPASS_WINDOW_MS);
+                notify(player, "§aCapture bypass (Master Ball): level " + lvl + " allowed.");
+            } else {
+                notify(player, "§aCapture bypass (Shiny Pokémon): level " + lvl + " allowed.");
             }
         }
     }
 
-    // ==================== UTIL ====================
+    // =========================================================
+    //                     CAPTURED (POST)
+    // =========================================================
+    private static void onPokemonCaptured(PokemonCapturedEvent event) {
+        if (!LevelCapConfig.isEnabled()) return;
+        // Intenzionalmente nessuna logica: il clamp al catturato è spostato su GAINED
+        // per evitare desync/NPE lato client durante gli update.
+    }
 
-    private static boolean consumeIfActive(Map<UUID, Long> map, UUID id) {
-        Long until = map.get(id);
+    // =========================================================
+    //                  GAINED (post-capture o altro)
+    // =========================================================
+    private static void onPokemonGained(PokemonGainedEvent event) {
+        if (!LevelCapConfig.isEnabled()) return;
+
+        Object pokemon = event.getPokemon();
+        ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
+        if (owner == null) return;
+
+        int lvl = getPokemonLevel(pokemon);
+        int cap = LevelCapService.getEffectiveCap(owner);
+
+        // Valuta i bypass:
+        // 1) tag forte (UUID del Pokémon catturato con bypass)
+        UUID monId = getPokemonUuid(pokemon);
+        boolean taggedBypass = false;
+        if (monId != null) {
+            Set<UUID> set = captureBypass.getOrDefault(owner.getUuid(), Collections.emptySet());
+            if (set.remove(monId)) {
+                taggedBypass = true;
+            }
+            // pulizia struttura se vuota
+            if (set.isEmpty()) {
+                captureBypass.remove(owner.getUuid());
+            }
+        }
+
+        // 2) bypass shiny da config
+        boolean shinyBypass  = LevelCapConfig.isBypassIfShiny() && isPokemonShiny(pokemon);
+
+        // 3) fallback temporale master
+        boolean masterBypass = consumeMasterWindow(owner.getUuid());
+
+        boolean skipClamp = taggedBypass || shinyBypass || masterBypass;
+
+        if (lvl > cap && !skipClamp) {
+            if (LevelCapConfig.isClampGainedOverCap()) {
+                MinecraftServer server = owner.getServer();
+                if (server != null) {
+                    server.execute(() -> {
+                        if (setPokemonLevel(pokemon, cap)) {
+                            notify(owner, "§cPokémon level clamped to " + cap + ".");
+                        }
+                    });
+                }
+            } else {
+                notify(owner, "§ePokémon gained over cap (" + lvl + " > " + cap + ") allowed by config; no clamp applied.");
+            }
+        }
+    }
+
+    // =========================================================
+    //                         UTIL
+    // =========================================================
+    private static boolean consumeMasterWindow(UUID playerId) {
+        Long until = recentMasterBypass.get(playerId);
         long now = System.currentTimeMillis();
         if (until != null && now <= until) {
-            map.remove(id);
+            recentMasterBypass.remove(playerId);
             return true;
         }
-        if (until != null) map.remove(id);
+        if (until != null) recentMasterBypass.remove(playerId);
         return false;
+    }
+
+    private static UUID getEntityUuid(Object entity) {
+        if (entity == null) return null;
+        try {
+            Object r = entity.getClass().getMethod("getUuid").invoke(entity);
+            if (r instanceof UUID u) return u;
+        } catch (ReflectiveOperationException ignored) {}
+        try {
+            Object r = entity.getClass().getMethod("getUUID").invoke(entity);
+            if (r instanceof UUID u) return u;
+        } catch (ReflectiveOperationException ignored) {}
+        return null;
+    }
+
+    private static UUID getPokemonUuid(Object obj) {
+        Object mon = unwrapMon(obj);
+        if (mon == null) return null;
+        try {
+            Object r = mon.getClass().getMethod("getUuid").invoke(mon);
+            if (r instanceof UUID u) return u;
+        } catch (ReflectiveOperationException ignored) {}
+        try {
+            Object r = mon.getClass().getMethod("getUUID").invoke(mon);
+            if (r instanceof UUID u) return u;
+        } catch (ReflectiveOperationException ignored) {}
+        return null;
     }
 
     private static void cancel(Object cancelableEvent) {
@@ -318,8 +376,9 @@ public final class LevelCapEnforcer {
         return false;
     }
 
-    // ---------- Master Ball detection (ROBUST, solo cobblemon:master_ball) ----------
-
+    // =========================================================
+    //               Master Ball detection robusta
+    // =========================================================
     private static boolean isMasterBall(Object pokeBallEntity) {
         if (!LevelCapConfig.isBypassOnMasterBall() || pokeBallEntity == null) return false;
 
@@ -370,7 +429,6 @@ public final class LevelCapEnforcer {
         return isCobblemonMasterBallId(ts);
     }
 
-    /** vero se "cobblemon:master_ball" o stringhe/enum che contengono master_ball */
     private static boolean isCobblemonMasterBallId(String s) {
         if (s == null || s.isBlank()) return false;
         String v = s.toLowerCase(Locale.ROOT).trim();
@@ -378,7 +436,6 @@ public final class LevelCapEnforcer {
                 || v.endsWith(":master_ball")
                 || v.contains("master_ball")
                 || v.equals("master ball")
-                || v.equals("master_ball")
                 || v.endsWith(".master_ball")
                 || v.endsWith("$master_ball");
     }
@@ -401,20 +458,26 @@ public final class LevelCapEnforcer {
             for (var f : c.getDeclaredFields()) {
                 f.setAccessible(true);
                 Object v = f.get(obj);
-                if (v == null) continue;
-
-                if (v instanceof CharSequence) {
-                    if (isCobblemonMasterBallId(v.toString())) return true;
-                } else if (v instanceof Item) {
-                    String id = itemIdString((Item) v);
-                    if (isCobblemonMasterBallId(id)) return true;
-                } else if (v instanceof ItemStack) {
-                    ItemStack st = (ItemStack) v;
-                    if (!st.isEmpty() && isCobblemonMasterBallId(itemIdString(st.getItem()))) return true;
-                } else if (v instanceof Enum<?>) {
-                    if (isCobblemonMasterBallId(((Enum<?>) v).name())) return true;
-                } else {
-                    if (isCobblemonMasterBallId(String.valueOf(v))) return true;
+                switch (v) {
+                    case null -> {
+                        continue;
+                    }
+                    case CharSequence charSequence -> {
+                        if (isCobblemonMasterBallId(v.toString())) return true;
+                    }
+                    case Item item -> {
+                        String id = itemIdString(item);
+                        if (isCobblemonMasterBallId(id)) return true;
+                    }
+                    case ItemStack st -> {
+                        if (!st.isEmpty() && isCobblemonMasterBallId(itemIdString(st.getItem()))) return true;
+                    }
+                    case Enum<?> en -> {
+                        if (isCobblemonMasterBallId(en.name())) return true;
+                    }
+                    default -> {
+                        if (isCobblemonMasterBallId(String.valueOf(v))) return true;
+                    }
                 }
             }
         } catch (Throwable ignored) {}
@@ -446,8 +509,9 @@ public final class LevelCapEnforcer {
         return (o == null) ? null : String.valueOf(o);
     }
 
-    // ======== EXP helpers ========
-
+    // =========================================================
+    //                       EXP helpers
+    // =========================================================
     private static Integer getExpAmountFromAnyExpEvent(Object ev) {
         for (String m : new String[]{"getExperience", "getExp", "getAmount", "getExperienceAmount"}) {
             try {
@@ -480,7 +544,6 @@ public final class LevelCapEnforcer {
             if (stats != null) currentLevel = tryInt(stats, "getLevel");
         }
         if (currentLevel == null) return null;
-
         if (currentLevel >= targetLevel) return 0;
 
         Integer currentExp = firstNonNull(
@@ -539,8 +602,6 @@ public final class LevelCapEnforcer {
             return null;
         }
     }
-
-    // ======== piccoli helper ========
 
     @SafeVarargs
     private static <T> T firstNonNull(T... vals) {
