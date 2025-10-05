@@ -72,7 +72,10 @@ public class GrassWandClient {
             Box box = new Box(minX, minY, minZ, maxX, minY + 1, maxZ)
                     .offset(-camX, -camY, -camZ);
 
-            RenderUtils.drawFilledBox(matrices, box, 0f, 0.4f, 1f, 0.25f);
+            var providers = ctx.consumers();
+            if (providers == null) return;
+            assert matrices != null;
+            RenderUtils.drawFilledBox(matrices, providers, box, 0f, 0.4f, 1f, 0.25f);
             RenderUtils.drawOutlineBox(matrices, box, 0f, 0.6f, 1f, 0.9f);
         });
     }

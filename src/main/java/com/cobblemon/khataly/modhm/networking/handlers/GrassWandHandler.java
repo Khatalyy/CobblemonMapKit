@@ -10,11 +10,14 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.TallPlantBlock;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public class GrassWandHandler {
@@ -48,7 +51,7 @@ public class GrassWandHandler {
         // Read mode from wand in hand (main/offhand). Default = short.
         boolean tallMode = readTallMode(player);
 
-        Block shortGrassBlock = tryShortGrass();
+        Block shortGrassBlock = resolveShortGrass();
         int placed = 0;
 
         for (int x = minX; x <= maxX; x++) {
@@ -115,11 +118,10 @@ public class GrassWandHandler {
     }
 
     /** SHORT_GRASS (new mappings) or legacy GRASS. */
-    private static Block tryShortGrass() {
-        try { return (Block) Blocks.class.getField("SHORT_GRASS").get(null); }
-        catch (Exception e) {
-            try { return (Block) Blocks.class.getField("GRASS").get(null); }
-            catch (Exception ignored) { return null; }
-        }
+    private static Block resolveShortGrass() {
+        Optional<Block> a = Registries.BLOCK.getOrEmpty(Identifier.of("minecraft", "short_grass"));
+        if (a.isPresent()) return a.get();
+        Optional<Block> b = Registries.BLOCK.getOrEmpty(Identifier.of("minecraft", "grass")); // legacy id
+        return b.orElse(null);
     }
 }

@@ -6,11 +6,15 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -102,6 +106,10 @@ public class GrassZoneCommands {
                     var wk = p.getWorld().getRegistryKey();
                     BlockPos bp = p.getBlockPos();
                     var zones = GrassZonesConfig.findAt(wk, bp.getX(), bp.getY(), bp.getZ());
+                    if (zones.isEmpty()) {
+                        // prova anche y-1 per tollerare tall_grass (upper/under)
+                        zones = GrassZonesConfig.findAt(wk, bp.getX(), bp.getY() - 1, bp.getZ());
+                    }
 
                     if (zones.isEmpty()) {
                         src.sendFeedback(() -> Text.literal("§7No zone here."), false);
@@ -121,28 +129,52 @@ public class GrassZoneCommands {
 
     /**
      * Removes only decorative grass (short/tall) in the zone rectangle at the zone Y level.
+     * Gestisce correttamente le piante doppie (TALL_GRASS), cancellando entrambe le metà.
      */
     private static int clearGrassInZone(World world, GrassZonesConfig.Zone z) {
         int y = z.y();
         int removed = 0;
-        Block shortGrass = tryShortGrass();
+        Block shortGrass = resolveShortGrass();
 
         for (int x = z.minX(); x <= z.maxX(); x++) {
             for (int zed = z.minZ(); zed <= z.maxZ(); zed++) {
                 BlockPos pos = new BlockPos(x, y, zed);
                 BlockState st = world.getBlockState(pos);
 
-                boolean isShort = (shortGrass != null && st.isOf(shortGrass));
-                boolean isTall = st.isOf(Blocks.TALL_GRASS);
-                boolean isLegacy = false;
-
-                try {
-                    // some older mappings use Blocks.GRASS for short tuft
-                    isLegacy = st.isOf((Block) Blocks.class.getField("GRASS").get(null));
-                } catch (Exception ignored) {}
-
-                if (isShort || isTall || isLegacy) {
+                // --- SHORT GRASS ---
+                if (shortGrass != null && st.isOf(shortGrass)) {
                     world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                    removed++;
+                    continue;
+                }
+
+                // --- TALL GRASS (double block) ---
+                if (st.isOf(Blocks.TALL_GRASS)) {
+                    DoubleBlockHalf half = st.get(Properties.DOUBLE_BLOCK_HALF);
+                    if (half == DoubleBlockHalf.LOWER) {
+                        // base + top
+                        BlockPos up = pos.up();
+                        if (world.getBlockState(up).isOf(Blocks.TALL_GRASS)) {
+                            world.setBlockState(up, Blocks.AIR.getDefaultState(), 3);
+                        }
+                        world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                    } else {
+                        // top + base
+                        BlockPos down = pos.down();
+                        if (world.getBlockState(down).isOf(Blocks.TALL_GRASS)) {
+                            world.setBlockState(down, Blocks.AIR.getDefaultState(), 3);
+                        }
+                        world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                    }
+                    removed++;
+                    continue;
+                }
+
+                // --- Safety: se siamo sull'upper a Y, prova a pulire anche la base a Y-1 ---
+                BlockState below = world.getBlockState(pos.down());
+                if (below.isOf(Blocks.TALL_GRASS)) {
+                    world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                    world.setBlockState(pos.down(), Blocks.AIR.getDefaultState(), 3);
                     removed++;
                 }
             }
@@ -150,15 +182,14 @@ public class GrassZoneCommands {
         return removed;
     }
 
-    private static Block tryShortGrass() {
-        try {
-            return (Block) Blocks.class.getField("SHORT_GRASS").get(null);
-        } catch (Exception e) {
-            try {
-                return (Block) Blocks.class.getField("GRASS").get(null);
-            } catch (Exception ignored) {
-                return null;
-            }
-        }
+    /**
+     * Risolve il blocco di short grass in modo robusto (senza reflection),
+     * con fallback a "minecraft:grass" per mapping più vecchie.
+     */
+    private static Block resolveShortGrass() {
+        Block b = Registries.BLOCK.get(Identifier.of("minecraft", "short_grass"));
+        if (b != Blocks.AIR) return b;
+        Block legacy = Registries.BLOCK.get(Identifier.of("minecraft", "grass"));
+        return legacy != Blocks.AIR ? legacy : null;
     }
 }

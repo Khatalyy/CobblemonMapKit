@@ -13,8 +13,10 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
@@ -131,26 +133,17 @@ public class GrassEncounterTicker {
     }
 
     /** true se è SHORT_GRASS / TALL_GRASS o legacy GRASS (per vecchie mapping). */
-    private static boolean isDecorativeGrass(BlockState st) {
-        boolean tall = st.isOf(Blocks.TALL_GRASS);
-        boolean shortG = false;
-        boolean legacy = false;
-
-        Block shortBlock = tryShortGrass();
-        if (shortBlock != null) shortG = st.isOf(shortBlock);
-
-        try { legacy = st.isOf((Block) Blocks.class.getField("GRASS").get(null)); }
-        catch (Exception ignored) {}
-
-        return tall || shortG || legacy;
+    private static Block resolveShortGrass() {
+        Block b = Registries.BLOCK.get(Identifier.of("minecraft", "short_grass"));
+        if (b != Blocks.AIR) return b;
+        Block legacy = Registries.BLOCK.get(Identifier.of("minecraft", "grass")); // vecchie mapping
+        return legacy != Blocks.AIR ? legacy : null;
     }
 
-    private static Block tryShortGrass() {
-        try { return (Block) Blocks.class.getField("SHORT_GRASS").get(null); }
-        catch (Exception e) {
-            try { return (Block) Blocks.class.getField("GRASS").get(null); }
-            catch (Exception ignored) { return null; }
-        }
+    private static boolean isDecorativeGrass(BlockState st) {
+        if (st.isOf(Blocks.TALL_GRASS)) return true;
+        Block shortBlock = resolveShortGrass();
+        return shortBlock != null && st.isOf(shortBlock);
     }
 
     private static GrassZonesConfig.SpawnEntry weightedRandom(List<GrassZonesConfig.SpawnEntry> entries, Random r) {
