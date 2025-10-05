@@ -1,9 +1,6 @@
 package com.cobblemon.khataly.modhm.event.server;
 
-import com.cobblemon.khataly.modhm.event.server.custom.ServerFlashHandler;
-import com.cobblemon.khataly.modhm.event.server.custom.ServerFlyHandler;
-import com.cobblemon.khataly.modhm.event.server.custom.ServerTeleportHandler;
-import com.cobblemon.khataly.modhm.event.server.custom.ServerUltraHoleHandler;
+import com.cobblemon.khataly.modhm.event.server.custom.*;
 
 
 public class ServerEventHandler {
@@ -12,5 +9,7 @@ public class ServerEventHandler {
         ServerFlashHandler.register();
         ServerTeleportHandler.register();
         ServerUltraHoleHandler.register();
+        LevelCapEnforcer.register();
+        LevelCapProgressionWatcher.register();
     }
 }

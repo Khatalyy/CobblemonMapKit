@@ -7,58 +7,76 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Gestisce l'elenco dei FlyTarget sbloccati per giocatore (per-UUID).
- * Salva su: config/modhm/player_flytargets/<uuid>.json
+ * Tracks which level-cap labels have been applied per player UUID.
+ * Saved at: config/modhm/progress/player_levelcap/<uuid>.json
+ * Keys are the LABELS (lowercase), not item IDs.
  */
-public class PlayerFlyProgress {
+public class PlayerLevelCapProgress {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final File ROOT = new File("config/modhm/progress/player_flytargets");
+    private static final File ROOT = new File("config/modhm/progress/player_levelcap");
     private static final int CURRENT_SCHEMA_VERSION = 1;
 
-    /** Cache in memoria: UUID -> set di nomi target (lowercase) sbloccati */
+    /** In-memory cache: UUID -> set of applied labels (lowercase). */
     private static final Map<UUID, Set<String>> cache = new HashMap<>();
 
-    // ===================== API =====================
+    // ===================== PUBLIC API =====================
 
-    /** Restituisce un set NON modificabile dei target sbloccati. */
-    public static Set<String> getUnlocked(UUID uuid) {
+    public static Set<String> getApplied(UUID uuid) {
         ensureLoaded(uuid);
         return Collections.unmodifiableSet(cache.getOrDefault(uuid, Collections.emptySet()));
     }
 
-    /** True se il target (key lowercase) è sbloccato per il player. */
-    public static boolean isUnlocked(UUID uuid, String keyLower) {
+    public static boolean isApplied(UUID uuid, String label) {
         ensureLoaded(uuid);
-        return cache.getOrDefault(uuid, Collections.emptySet()).contains(keyLower);
+        return cache.getOrDefault(uuid, Collections.emptySet())
+                .contains(safeLower(label));
     }
 
-    /** Sblocca un target. Ritorna true se è stato aggiunto (nuovo), false se era già presente. */
-    public static boolean unlock(UUID uuid, String keyLower) {
+    /** Apply label; returns true if newly added. */
+    public static boolean apply(UUID uuid, String label) {
         ensureLoaded(uuid);
+        String k = safeLower(label);
         Set<String> set = cache.computeIfAbsent(uuid, u -> new HashSet<>());
-        boolean added = set.add(keyLower);
-        if (added) save(uuid); // salvataggio immediato
+        boolean added = set.add(k);
+        if (added) save(uuid);
         return added;
     }
-    public static void clearAll(java.util.UUID uuid) {
-        cache.put(uuid, new java.util.HashSet<>());
-        save(uuid);
+
+    /** Remove one applied label; returns true if existed. */
+    public static boolean remove(UUID uuid, String label) {
+        ensureLoaded(uuid);
+        String k = safeLower(label);
+        Set<String> set = cache.getOrDefault(uuid, null);
+        if (set == null) return false;
+        boolean removed = set.remove(k);
+        if (removed) save(uuid);
+        return removed;
     }
 
-    /** Sblocca in massa più target. */
-    public static void unlockAll(UUID uuid, Collection<String> keysLower) {
+    public static void applyAll(UUID uuid, Collection<String> labels) {
         ensureLoaded(uuid);
-        if (keysLower == null || keysLower.isEmpty()) return;
+        if (labels == null || labels.isEmpty()) return;
         Set<String> set = cache.computeIfAbsent(uuid, u -> new HashSet<>());
-        if (set.addAll(keysLower)) save(uuid);
+        boolean changed = false;
+        for (String l : labels) {
+            if (l == null) continue;
+            changed |= set.add(l.toLowerCase(Locale.ROOT));
+        }
+        if (changed) save(uuid);
+    }
+
+    /** Danger: wipe all progress for this player. */
+    public static void clearAll(UUID uuid) {
+        cache.put(uuid, new HashSet<>());
+        save(uuid);
     }
 
     // ================== LOAD/SAVE ==================
 
     private static void ensureLoaded(UUID uuid) {
         if (cache.containsKey(uuid)) return;
-        cache.put(uuid, new HashSet<>()); // evita rientri
+        cache.put(uuid, new HashSet<>()); // prevent re-entrancy
         load(uuid);
     }
 
@@ -70,27 +88,25 @@ public class PlayerFlyProgress {
         try {
             File dir = ROOT;
             if (!dir.exists() && !dir.mkdirs()) {
-                logWarn("Impossibile creare cartella progressi: " + dir.getAbsolutePath());
+                logWarn("Could not create progress directory: " + dir.getAbsolutePath());
             }
             File f = fileFor(uuid);
             if (!f.exists()) {
-                // nuovo player: nessun target sbloccato
                 cache.put(uuid, new HashSet<>());
                 return;
             }
             try (FileReader r = new FileReader(f)) {
                 Data d = GSON.fromJson(r, Data.class);
-                if (d == null || d.unlocked == null) {
+                if (d == null || d.applied == null) {
                     cache.put(uuid, new HashSet<>());
                 } else {
-                    // normalizza lowercase
                     Set<String> s = new HashSet<>();
-                    for (String k : d.unlocked) if (k != null) s.add(k.toLowerCase(Locale.ROOT));
+                    for (String k : d.applied) if (k != null) s.add(k.toLowerCase(Locale.ROOT));
                     cache.put(uuid, s);
                 }
             }
         } catch (Exception e) {
-            logError("Errore nel caricamento progressi per " + uuid, e);
+            logError("Error loading level-cap progress for " + uuid, e);
             cache.put(uuid, new HashSet<>());
         }
     }
@@ -99,12 +115,12 @@ public class PlayerFlyProgress {
         try {
             File dir = ROOT;
             if (!dir.exists() && !dir.mkdirs()) {
-                logWarn("Impossibile creare cartella progressi: " + dir.getAbsolutePath());
+                logWarn("Could not create progress directory: " + dir.getAbsolutePath());
             }
             File f = fileFor(uuid);
             Data d = new Data();
             d.schemaVersion = CURRENT_SCHEMA_VERSION;
-            d.unlocked = new ArrayList<>(cache.getOrDefault(uuid, Collections.emptySet()));
+            d.applied = new ArrayList<>(cache.getOrDefault(uuid, Collections.emptySet()));
 
             File temp = new File(f.getParentFile(), f.getName() + ".tmp");
             try (FileWriter w = new FileWriter(temp)) {
@@ -123,7 +139,7 @@ public class PlayerFlyProgress {
                 );
             }
         } catch (Exception e) {
-            logError("Errore nel salvataggio progressi per " + uuid, e);
+            logError("Error saving level-cap progress for " + uuid, e);
         }
     }
 
@@ -131,15 +147,19 @@ public class PlayerFlyProgress {
 
     private static class Data {
         Integer schemaVersion;
-        List<String> unlocked = new ArrayList<>();
+        List<String> applied = new ArrayList<>();
+    }
+
+    private static String safeLower(String s) {
+        return s == null ? "" : s.toLowerCase(Locale.ROOT);
     }
 
     private static void logWarn(String msg) {
-        System.out.println("[PlayerFlyProgress][WARN] " + msg);
+        System.out.println("[PlayerLevelCapProgress][WARN] " + msg);
     }
 
     private static void logError(String msg, Throwable t) {
-        System.err.println("[PlayerFlyProgress][ERROR] " + msg);
+        System.err.println("[PlayerLevelCapProgress][ERROR] " + msg);
         if (t != null) {
             StringWriter sw = new StringWriter();
             t.printStackTrace(new PrintWriter(sw));

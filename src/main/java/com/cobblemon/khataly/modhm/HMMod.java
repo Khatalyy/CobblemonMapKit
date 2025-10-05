@@ -5,10 +5,12 @@ import com.cobblemon.khataly.modhm.block.ModBlocks;
 import com.cobblemon.khataly.modhm.block.entity.ModBlockEntities;
 import com.cobblemon.khataly.modhm.command.ModCommands;
 import com.cobblemon.khataly.modhm.config.GrassZonesConfig;
+import com.cobblemon.khataly.modhm.config.LevelCapConfig;
 import com.cobblemon.khataly.modhm.config.ModConfig;
 import com.cobblemon.khataly.modhm.event.server.FlyTargetProximityWatcher;
 import com.cobblemon.khataly.modhm.event.server.ServerEventHandler;
 import com.cobblemon.khataly.modhm.event.server.custom.GrassEncounterTicker;
+import com.cobblemon.khataly.modhm.event.server.custom.LevelCapEnforcer;
 import com.cobblemon.khataly.modhm.item.ModItemGroups;
 import com.cobblemon.khataly.modhm.item.ModItems;
 import com.cobblemon.khataly.modhm.config.FlyTargetConfig;
@@ -33,6 +35,8 @@ public class HMMod implements ModInitializer {
         ModConfig.load();
         GrassZonesConfig.load();
         FlyTargetConfig.load();
+        LevelCapConfig.load();
+
         ModSounds.registerSounds();
         ModScreenHandlers.registerScreenHandlers();
         ModNetworking.registerPackets();

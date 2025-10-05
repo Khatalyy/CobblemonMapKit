@@ -116,25 +116,6 @@ public class GrassZoneCommands {
                     ), false);
                     return 1;
                 }))
-
-                // Aliases: delete / deletehere → forward using executeWithPrefix(...)
-                .then(literal("delete")
-                        .then(CommandManager.argument("id", StringArgumentType.string())
-                                .executes(ctx -> {
-                                    var src = ctx.getSource();
-                                    String sid = StringArgumentType.getString(ctx, "id");
-                                    src.getServer().getCommandManager()
-                                            .executeWithPrefix(src, "grasszone remove " + sid);
-                                    return 1;
-                                })
-                        )
-                )
-                .then(literal("deletehere").executes(ctx -> {
-                    var src = ctx.getSource();
-                    src.getServer().getCommandManager()
-                            .executeWithPrefix(src, "grasszone removehere");
-                    return 1;
-                }))
         );
     }
 
