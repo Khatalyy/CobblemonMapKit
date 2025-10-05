@@ -24,6 +24,8 @@ import java.util.*;
  * - Quando trova un item collegato a una LABEL, applica la LABEL (se non già applicata)
  * Messaggi al player:
  *   - §a verde = progresso sbloccato / info positiva
+ *
+ * Rispetta LevelCapConfig.isEnabled(): se false non fa nulla.
  */
 public final class LevelCapProgressionWatcher {
 
@@ -60,6 +62,11 @@ public final class LevelCapProgressionWatcher {
 
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
             if (player != null) {
+                // Se il sistema è disabilitato, non scansionare: ripianifica soltanto.
+                if (!LevelCapConfig.isEnabled()) {
+                    scheduleSoon(uuid, RESCAN_INTERVAL_MS);
+                    continue;
+                }
                 scanAndApply(player);
                 scheduleSoon(uuid, RESCAN_INTERVAL_MS);
             }
@@ -67,6 +74,7 @@ public final class LevelCapProgressionWatcher {
     }
 
     private static void scanAndApply(ServerPlayerEntity player) {
+        if (!LevelCapConfig.isEnabled()) return; // guard
         if (player == null || player.getServer() == null) return;
 
         Map<String, Integer> labelsCaps = LevelCapConfig.getAllLabelsWithCaps();

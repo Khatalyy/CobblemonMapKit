@@ -47,6 +47,19 @@ public class LevelCapCommands {
                 )
         );
 
+        // ===== Admin: global enable/disable =====
+        root.then(CommandManager.literal("enabled")
+                .requires(src -> src.hasPermissionLevel(2))
+                .then(CommandManager.argument("value", BoolArgumentType.bool())
+                        .executes(ctx -> {
+                            boolean v = BoolArgumentType.getBool(ctx, "value");
+                            LevelCapConfig.setEnabled(v);
+                            ctx.getSource().sendMessage(Text.literal("§aLevel-cap system enabled = §e" + v + "§a."));
+                            return 1;
+                        })
+                )
+        );
+
         // ===== Public: /levelcap info =====
         root.then(CommandManager.literal("info")
                 .executes(ctx -> {

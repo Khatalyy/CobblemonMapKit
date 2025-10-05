@@ -43,7 +43,6 @@ public class HMMod implements ModInitializer {
         ModBlockEntities.registerBlockEntities();
         ModItems.registerModItems();
         ModBlocks.registerModBlocks();
-        FlyTargetProximityWatcher.register();
         ModItemGroups.registerItemGroups();
         BadgeTagUseHandler.register();
         ServerEventHandler.register();

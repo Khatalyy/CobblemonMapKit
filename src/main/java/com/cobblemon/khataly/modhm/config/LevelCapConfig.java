@@ -12,7 +12,7 @@ import java.util.*;
 
 /**
  * Level cap configuration (label-based, simplified masterball).
- *
+ * - enabled: if false, all level-cap logic should be considered disabled (guards elsewhere should check this)
  * - baseCap: starting cap for everyone
  * - bypassIfShiny: shiny bypasses capture-cap (NOT EXP cap)
  * - bypassOnMasterBall: if true, allows captures above cap only with cobblemon:master_ball
@@ -20,14 +20,16 @@ import java.util.*;
  *     label    (human-friendly, unique, case-insensitive key)
  *     newCap   (int)
  *     itemIds  (list of canonical item IDs that unlock this label when found in inventory)
- *
  * File path: config/modhm/levelcap.json
  */
 public class LevelCapConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/modhm/levelcap.json");
-    private static final int CURRENT_SCHEMA_VERSION = 2;
+    private static final int CURRENT_SCHEMA_VERSION = 3;
+
+    /** Global on/off switch for level-cap logic. */
+    private static boolean enabled = true;
 
     private static int baseCap = 20;
     private static boolean bypassIfShiny = false;
@@ -42,6 +44,7 @@ public class LevelCapConfig {
 
     private static class ConfigData {
         Integer schemaVersion;
+        Boolean enabled;
         Integer baseCap;
         Boolean bypassIfShiny;
         Boolean bypassOnMasterBall;
@@ -77,6 +80,7 @@ public class LevelCapConfig {
 
         boolean clean = true;
 
+        boolean loadedEnabled = true;
         int loadedBase = 20;
         boolean loadedShiny = false;
         boolean loadedMaster = false;
@@ -93,6 +97,7 @@ public class LevelCapConfig {
                     clean = false;
                 }
 
+                loadedEnabled = d.enabled == null || d.enabled;
                 loadedBase   = (d.baseCap == null) ? 20 : Math.max(1, d.baseCap);
                 loadedShiny  = (d.bypassIfShiny != null && d.bypassIfShiny);
                 loadedMaster = (d.bypassOnMasterBall != null && d.bypassOnMasterBall);
@@ -124,6 +129,7 @@ public class LevelCapConfig {
             clean = false;
         }
 
+        enabled = loadedEnabled;
         baseCap = loadedBase;
         bypassIfShiny = loadedShiny;
         bypassOnMasterBall = loadedMaster;
@@ -135,7 +141,8 @@ public class LevelCapConfig {
             save();
             logInfo("levelcap.json rewritten with " + progressions.size() + " progression entries.");
         } else {
-            logInfo("Config loaded: baseCap=" + baseCap
+            logInfo("Config loaded: enabled=" + enabled
+                    + ", baseCap=" + baseCap
                     + ", bypassShiny=" + bypassIfShiny
                     + ", bypassMasterBall=" + bypassOnMasterBall
                     + ", progressions=" + progressions.size());
@@ -151,6 +158,7 @@ public class LevelCapConfig {
 
             ConfigData out = new ConfigData();
             out.schemaVersion = CURRENT_SCHEMA_VERSION;
+            out.enabled = enabled;
             out.baseCap = baseCap;
             out.bypassIfShiny = bypassIfShiny;
             out.bypassOnMasterBall = bypassOnMasterBall;
@@ -176,6 +184,10 @@ public class LevelCapConfig {
     public static void reload() { load(); }
 
     // -------- Getters/Setters --------
+
+    /** Global switch. */
+    public static boolean isEnabled() { return enabled; }
+    public static void setEnabled(boolean v) { enabled = v; save(); }
 
     public static int getBaseCap() { return baseCap; }
     public static void setBaseCap(int v) { baseCap = Math.max(1, v); save(); }
@@ -281,6 +293,7 @@ public class LevelCapConfig {
     }
 
     private static void applyDefaults() {
+        enabled = true;
         baseCap = 20;
         bypassIfShiny = false;
         bypassOnMasterBall = true; // default enabled

@@ -29,39 +29,32 @@ import java.util.concurrent.ConcurrentHashMap;
  *  - EXP: blocco/riduzione fino al cap per qualsiasi fonte (battaglie, caramelle S/XS/L/XL ecc.).
  *  - Cattura: shiny/master possono bypassare se abilitati (pre-hit). Post-capture clamp se necessario.
  *  - Clamp di sicurezza su LevelUp e su Pokémon ottenuti fuori dalla cattura.
- *
- * Colori:
- *   - §c rosso = bloccato/limitato/clamp
- *   - §a verde = permesso/bypass/trim sicuro
+ * Rispetta LevelCapConfig.isEnabled(): se false non fa nulla.
  */
 public final class LevelCapEnforcer {
 
     private LevelCapEnforcer() {}
 
-    // === Bypass window per ricordare una cattura consentita da Master/Shiny ===
+    // Finestra per ricordare un bypass valido appena riconosciuto
     private static final long BYPASS_WINDOW_MS = 5000L;
     private static final Map<UUID, Long> recentMasterBypass = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> recentShinyBypass  = new ConcurrentHashMap<>();
 
     public static void register() {
-        // EXP enforcement (copre anche le caramelle tramite l'evento EXP pre)
         CobblemonEvents.EXPERIENCE_GAINED_EVENT_PRE.subscribe(Priority.HIGHEST, e -> { onExperienceGainedPre(e); return Unit.INSTANCE; });
-        // Block upfront se già al cap; trimming avviene nell'evento EXP
         CobblemonEvents.EXPERIENCE_CANDY_USE_PRE.subscribe(Priority.HIGHEST, e -> { onExperienceCandyPre(e); return Unit.INSTANCE; });
-        // Clamp di sicurezza
         CobblemonEvents.LEVEL_UP_EVENT.subscribe(Priority.NORMAL, e -> { onLevelUpPost(e); return Unit.INSTANCE; });
 
-        // Gate cattura e clamp post-capture
         CobblemonEvents.THROWN_POKEBALL_HIT.subscribe(Priority.HIGHEST, e -> { onPokeballHit(e); return Unit.INSTANCE; });
         CobblemonEvents.POKEMON_CAPTURED.subscribe(Priority.NORMAL, e -> { onPokemonCaptured(e); return Unit.INSTANCE; });
 
-        // Altri modi di ottenere Pokémon (trade, reward, ecc.)
         CobblemonEvents.POKEMON_GAINED.subscribe(Priority.NORMAL, e -> { onPokemonGained(e); return Unit.INSTANCE; });
     }
 
     // ==================== EXP ====================
 
     private static void onExperienceGainedPre(ExperienceGainedPreEvent event) {
+        if (!LevelCapConfig.isEnabled()) return; // guard
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -95,6 +88,7 @@ public final class LevelCapEnforcer {
     }
 
     private static void onExperienceCandyPre(ExperienceCandyUseEvent.Pre event) {
+        if (!LevelCapConfig.isEnabled()) return; // guard
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -109,6 +103,7 @@ public final class LevelCapEnforcer {
     }
 
     private static void onLevelUpPost(LevelUpEvent event) {
+        if (!LevelCapConfig.isEnabled()) return; // guard
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -135,6 +130,7 @@ public final class LevelCapEnforcer {
     // ==================== CAPTURE ====================
 
     private static void onPokeballHit(ThrownPokeballHitEvent event) {
+        if (!LevelCapConfig.isEnabled()) return; // guard
         var pokeBall = event.getPokeBall();
         var targetEntity = event.getPokemon();
         var ownerEntity = pokeBall.getOwner();
@@ -164,6 +160,7 @@ public final class LevelCapEnforcer {
     }
 
     private static void onPokemonCaptured(PokemonCapturedEvent event) {
+        if (!LevelCapConfig.isEnabled()) return; // guard
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -190,6 +187,7 @@ public final class LevelCapEnforcer {
     // ==================== NON-CAPTURE GAINS ====================
 
     private static void onPokemonGained(PokemonGainedEvent event) {
+        if (!LevelCapConfig.isEnabled()) return; // guard
         Object pokemon = event.getPokemon();
         ServerPlayerEntity owner = eventPlayerOrOwner(event, pokemon);
         if (owner == null) return;
@@ -325,7 +323,6 @@ public final class LevelCapEnforcer {
     private static boolean isMasterBall(Object pokeBallEntity) {
         if (!LevelCapConfig.isBypassOnMasterBall() || pokeBallEntity == null) return false;
 
-        // 0) tentativi diretti sul projectile
         String quick = firstNonNull(
                 tryString(pokeBallEntity, "getBallId"),
                 tryString(pokeBallEntity, "getBallIdentifier"),
@@ -335,7 +332,6 @@ public final class LevelCapEnforcer {
         );
         if (isCobblemonMasterBallId(quick)) return true;
 
-        // 1) oggetto/nome palla annidato
         Object ballObj = firstNonNullObj(
                 tryObject(pokeBallEntity, "getBall"),
                 tryObject(pokeBallEntity, "getPokeBall"),
@@ -359,7 +355,6 @@ public final class LevelCapEnforcer {
             if (scanObjectForMasterBall(ballObj)) return true;
         }
 
-        // 2) itemstack del projectile
         ItemStack stack = tryGetPokeballItemStack(pokeBallEntity);
         if (stack != null && !stack.isEmpty()) {
             String itemId = itemIdString(stack.getItem());
@@ -367,7 +362,6 @@ public final class LevelCapEnforcer {
             if (isCobblemonMasterBallId(String.valueOf(stack.getItem()))) return true;
         }
 
-        // 3) fallback: nomi di classe / toString
         String cls = pokeBallEntity.getClass().getName();
         if (isCobblemonMasterBallId(cls)) return true;
         String simple = pokeBallEntity.getClass().getSimpleName();

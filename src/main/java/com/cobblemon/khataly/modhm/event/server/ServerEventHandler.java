@@ -11,5 +11,6 @@ public class ServerEventHandler {
         ServerUltraHoleHandler.register();
         LevelCapEnforcer.register();
         LevelCapProgressionWatcher.register();
+        FlyTargetProximityWatcher.register();
     }
 }
