@@ -16,13 +16,20 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Incontri "a passo" dentro le Grass Zones, indipendenti dall'erba decorativa.
  * - Rispetta il cooldown per giocatore.
  * - Triggera solo quando il player cambia blocco.
- * - Seleziona lo spawn pesato, filtrato per fascia oraria (DAY/NIGHT/BOTH).
+ * - Filtra gli spawn per fascia oraria (DAY/NIGHT/BOTH).
+ * - Applica shiny rate per zona (1 su N); -1 = usa default globale.
  */
 public class GrassEncounterTicker {
 
@@ -30,6 +37,8 @@ public class GrassEncounterTicker {
     private static final int ENCOUNTER_COOLDOWN_TICKS = 60;
     // 8% per step
     private static final double BASE_STEP_CHANCE = 0.08;
+    // Default globale shiny 1/N (usato se la zona non imposta shinyOdds o mette -1)
+    private static final int DEFAULT_GLOBAL_SHINY_ODDS = 4096;
 
     private static final Map<UUID, Integer> COOLDOWN = new HashMap<>();
     private static final Map<UUID, BlockPos> LAST_BLOCK = new HashMap<>();
@@ -79,10 +88,14 @@ public class GrassEncounterTicker {
             int levelRange = Math.max(1, choice.maxLevel - choice.minLevel + 1);
             int level = choice.minLevel + rng.nextInt(levelRange);
 
+            // shiny roll per zona
+            int shinyOdds = getZoneShinyOddsOrDefault(zone);
+            boolean isShiny = rollShiny(rng, shinyOdds);
+
             // per ora solo Singles
             BattleFormat format = BattleFormat.Companion.getGEN_9_SINGLES();
 
-            if (startWildBattle(player, choice.species, level, format)) {
+            if (startWildBattle(player, choice.species, level, format, isShiny)) {
                 COOLDOWN.put(player.getUuid(), ENCOUNTER_COOLDOWN_TICKS);
             }
         }
@@ -135,10 +148,23 @@ public class GrassEncounterTicker {
         return null;
     }
 
+    /** Ritorna le shiny odds della zona, oppure il default globale se la zona non imposta. */
+    private static int getZoneShinyOddsOrDefault(GrassZonesConfig.Zone zone) {
+        return (zone.shinyOdds() <= 0) ? DEFAULT_GLOBAL_SHINY_ODDS : zone.shinyOdds();
+    }
+
+    /** Tira un dado 1 su N. */
+    private static boolean rollShiny(Random rng, int odds) {
+        if (odds <= 1) return true;   // 1 su 1 => sempre shiny
+        int v = rng.nextInt(odds);    // [0, odds)
+        return v == 0;
+    }
+
     /**
      * Avvia una battle PvE 1v1; passa sempre il party per evitare crash.
+     * Supporta shiny via flag.
      */
-    private static boolean startWildBattle(ServerPlayerEntity player, String speciesId, int level, BattleFormat format) {
+    private static boolean startWildBattle(ServerPlayerEntity player, String speciesId, int level, BattleFormat format, boolean shiny) {
         var server = player.getServer();
         if (server == null) return false;
         if (!PlayerUtils.hasUsablePokemon(player)) return false;
@@ -152,6 +178,7 @@ public class GrassEncounterTicker {
         Pokemon pokemon = new Pokemon();
         pokemon.setSpecies(species);
         pokemon.setLevel(level);
+        pokemon.setShiny(shiny);
         pokemon.initializeMoveset(true);
         pokemon.heal();
 

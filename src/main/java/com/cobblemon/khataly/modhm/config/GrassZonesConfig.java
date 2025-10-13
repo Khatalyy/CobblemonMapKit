@@ -13,12 +13,14 @@ import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.*;
 
-/** Manages saving/loading of Grass Zones. */
+/** Manages saving/loading of Grass Zones, including per-zone shiny odds. */
 public class GrassZonesConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/modhm/grass_zones.json");
-    private static final int CURRENT_SCHEMA_VERSION = 1;
+
+    /** Bump schema when changing on-disk format. */
+    private static final int CURRENT_SCHEMA_VERSION = 2;
 
     public enum TimeBand { DAY, NIGHT, BOTH }
 
@@ -51,7 +53,18 @@ public class GrassZonesConfig {
         private final long timeCreated;
         private final List<SpawnEntry> spawns;
 
-        public Zone(UUID id, RegistryKey<World> worldKey, int minX, int minZ, int maxX, int maxZ, int y, long timeCreated, List<SpawnEntry> spawns) {
+        /**
+         * Shiny odds specifiche della zona (1 su N). -1 = usa il default globale (es. 4096).
+         */
+        private final int shinyOdds;
+
+        public Zone(UUID id,
+                    RegistryKey<World> worldKey,
+                    int minX, int minZ, int maxX, int maxZ,
+                    int y,
+                    long timeCreated,
+                    List<SpawnEntry> spawns,
+                    int shinyOdds) {
             this.id = id;
             this.worldKey = worldKey;
             this.minX = Math.min(minX, maxX);
@@ -61,6 +74,7 @@ public class GrassZonesConfig {
             this.y = y;
             this.timeCreated = timeCreated;
             this.spawns = List.copyOf(spawns);
+            this.shinyOdds = shinyOdds <= 0 ? -1 : shinyOdds; // normalizza: <=0 -> usa default
         }
 
         public boolean contains(int x, int y, int z, RegistryKey<World> w) {
@@ -79,6 +93,18 @@ public class GrassZonesConfig {
         public int y() { return y; }
         public long timeCreated() { return timeCreated; }
         public List<SpawnEntry> spawns() { return spawns; }
+        /** 1 su N; -1 = usa default globale. */
+        public int shinyOdds() { return shinyOdds; }
+
+        /** Restituisce una copia con shiny odds aggiornate. */
+        public Zone withShinyOdds(int shinyOdds) {
+            return new Zone(id, worldKey, minX, minZ, maxX, maxZ, y, timeCreated, spawns, shinyOdds);
+        }
+
+        /** Restituisce una copia con lista spawns aggiornata (immutabilità leggera). */
+        public Zone withSpawns(List<SpawnEntry> newSpawns) {
+            return new Zone(id, worldKey, minX, minZ, maxX, maxZ, y, timeCreated, newSpawns, shinyOdds);
+        }
     }
 
     private static class ConfigData {
@@ -91,6 +117,11 @@ public class GrassZonesConfig {
         int minX, minZ, maxX, maxZ, y;
         long timeCreated;
         List<SpawnData> spawns = new ArrayList<>();
+
+        /**
+         * Shiny odds serializzate (1 su N). Se assente o <=0, verrà inteso come -1 (usa default).
+         */
+        Integer shinyOdds;
     }
     private static class SpawnData {
         String species;
@@ -132,7 +163,8 @@ public class GrassZonesConfig {
                         List<SpawnEntry> spawns = new ArrayList<>();
                         if (zd.spawns != null) {
                             for (SpawnData sd : zd.spawns) {
-                                if (sd.species == null || sd.species.isBlank() || sd.minLevel <= 0 || sd.maxLevel < sd.minLevel || sd.weight <= 0) {
+                                if (sd.species == null || sd.species.isBlank()
+                                        || sd.minLevel <= 0 || sd.maxLevel < sd.minLevel || sd.weight <= 0) {
                                     HMMod.LOGGER.warn("[GrassZonesConfig] Invalid spawn in zone {}: {}", zd.id, sd);
                                     clean = false;
                                     continue;
@@ -147,7 +179,11 @@ public class GrassZonesConfig {
                             }
                         }
                         long t = zd.timeCreated == 0 ? Instant.now().toEpochMilli() : zd.timeCreated;
-                        loaded.add(new Zone(id, wk, zd.minX, zd.minZ, zd.maxX, zd.maxZ, zd.y, t, spawns));
+
+                        // shinyOdds: se nullo o <=0 -> usa -1 (default globale)
+                        int shinyOdds = (zd.shinyOdds == null || zd.shinyOdds <= 0) ? -1 : zd.shinyOdds;
+
+                        loaded.add(new Zone(id, wk, zd.minX, zd.minZ, zd.maxX, zd.maxZ, zd.y, t, spawns, shinyOdds));
                     } catch (Exception ex) {
                         HMMod.LOGGER.warn("[GrassZonesConfig] Invalid zone, skipping: {}", (zd != null ? zd.id : "<null>"));
                         clean = false;
@@ -229,6 +265,9 @@ public class GrassZonesConfig {
                 zd.worldKey = z.worldKey().getValue().toString();
                 zd.minX = z.minX(); zd.minZ = z.minZ(); zd.maxX = z.maxX(); zd.maxZ = z.maxZ(); zd.y = z.y();
                 zd.timeCreated = z.timeCreated();
+                // shiny odds (1 su N); se -1 non serializziamo nulla? Preferiamo serializzare -1 per chiarezza.
+                zd.shinyOdds = (z.shinyOdds() <= 0) ? -1 : z.shinyOdds();
+
                 for (SpawnEntry se : z.spawns()) {
                     SpawnData sd = new SpawnData();
                     sd.species = se.species;
@@ -257,9 +296,29 @@ public class GrassZonesConfig {
     }
 
     /** Creation: optional spawn list (you can pass List.of() and add later via commands). */
-    public static UUID addZone(RegistryKey<World> worldKey, int minX, int minZ, int maxX, int maxZ, int y, List<SpawnEntry> spawns) {
+    public static UUID addZone(RegistryKey<World> worldKey,
+                               int minX, int minZ, int maxX, int maxZ,
+                               int y,
+                               List<SpawnEntry> spawns) {
+        // Back-compat overload: shinyOdds = -1 (usa default globale)
+        return addZone(worldKey, minX, minZ, maxX, maxZ, y, spawns, -1);
+    }
+
+    /** Creation with explicit shiny odds (1 su N). Usa -1 per default globale. */
+    public static UUID addZone(RegistryKey<World> worldKey,
+                               int minX, int minZ, int maxX, int maxZ,
+                               int y,
+                               List<SpawnEntry> spawns,
+                               int shinyOdds) {
         UUID id = UUID.randomUUID();
-        Zone z = new Zone(id, worldKey, minX, minZ, maxX, maxZ, y, Instant.now().toEpochMilli(), spawns == null ? List.of() : spawns);
+        Zone z = new Zone(
+                id, worldKey,
+                minX, minZ, maxX, maxZ,
+                y,
+                Instant.now().toEpochMilli(),
+                spawns == null ? List.of() : spawns,
+                shinyOdds
+        );
         ZONES.put(id, z);
         save();
         return id;
@@ -272,6 +331,10 @@ public class GrassZonesConfig {
 
     public static Collection<Zone> getAll() { return Collections.unmodifiableCollection(ZONES.values()); }
 
+    public static GrassZonesConfig.Zone get(UUID id) {
+        return ZONES.get(id);
+    }
+
     /** Find zones containing a given point (there can be more than one). */
     public static List<Zone> findAt(RegistryKey<World> wk, int x, int y, int z) {
         List<Zone> out = new ArrayList<>();
@@ -283,7 +346,7 @@ public class GrassZonesConfig {
     public static boolean addSpawn(UUID zoneId, SpawnEntry entry) {
         Zone z = ZONES.get(zoneId); if (z == null) return false;
         List<SpawnEntry> ns = new ArrayList<>(z.spawns()); ns.add(entry);
-        ZONES.put(zoneId, new Zone(z.id(), z.worldKey(), z.minX(), z.minZ(), z.maxX(), z.maxZ(), z.y(), z.timeCreated(), ns));
+        ZONES.put(zoneId, z.withSpawns(ns));
         save(); return true;
     }
 
@@ -291,12 +354,15 @@ public class GrassZonesConfig {
         Zone z = ZONES.get(zoneId); if (z == null) return false;
         List<SpawnEntry> ns = new ArrayList<>();
         for (SpawnEntry e : z.spawns()) if (!e.species.equalsIgnoreCase(speciesId)) ns.add(e);
-        ZONES.put(zoneId, new Zone(z.id(), z.worldKey(), z.minX(), z.minZ(), z.maxX(), z.maxZ(), z.y(), z.timeCreated(), ns));
+        ZONES.put(zoneId, z.withSpawns(ns));
         save(); return true;
     }
 
-    public static GrassZonesConfig.Zone get(UUID id) {
-        return ZONES.get(id);
+    /** Imposta le shiny odds (1 su N) per una zona. Usa -1 per tornare al default globale. */
+    public static boolean setZoneShinyOdds(UUID zoneId, int shinyOdds) {
+        Zone z = ZONES.get(zoneId); if (z == null) return false;
+        ZONES.put(zoneId, z.withShinyOdds(shinyOdds));
+        save(); return true;
     }
 
     private static void safeRewrite(List<Zone> valid) {
