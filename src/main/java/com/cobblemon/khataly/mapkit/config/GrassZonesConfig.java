@@ -10,17 +10,21 @@ import net.minecraft.world.World;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.*;
 
-/** Gestione completa salvataggio/caricamento delle Grass Zones, con shiny odds per zona e aspect opzionale per gli spawn. */
+/** Gestione Grass Zones:
+ *  - Una zona per file: config/cobblemonmapkit/zones/<nome>.json
+ *  - Nome obbligatorio e persistenza del nome nel filename
+ *  - Migrazione da grass_zones.json
+ */
 public class GrassZonesConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final File CONFIG_FILE = new File("config/cobblemonmapkit/grass_zones.json");
-
-    /** Manteniamo la versione per retro-compatibilità: l'aggiunta di "aspect" è opzionale, quindi non richiede bump. */
-    private static final int CURRENT_SCHEMA_VERSION = 2;
+    private static final File ZONES_DIR = new File("config/cobblemonmapkit/zones");
+    /** Bump per l'aggiunta del "name" e storage per-file. */
+    private static final int CURRENT_SCHEMA_VERSION = 3;
 
     public enum TimeBand { DAY, NIGHT, BOTH }
 
@@ -52,6 +56,7 @@ public class GrassZonesConfig {
 
     public static final class Zone {
         private final UUID id;
+        private final String name;
         private final RegistryKey<World> worldKey;
         private final int minX, minZ, maxX, maxZ;
         private final int y;
@@ -61,6 +66,7 @@ public class GrassZonesConfig {
         private final int shinyOdds;
 
         public Zone(UUID id,
+                    String name,
                     RegistryKey<World> worldKey,
                     int minX, int minZ, int maxX, int maxZ,
                     int y,
@@ -68,6 +74,7 @@ public class GrassZonesConfig {
                     List<SpawnEntry> spawns,
                     int shinyOdds) {
             this.id = id;
+            this.name = (name == null || name.isBlank()) ? ("Zone " + shortId(id)) : name.trim();
             this.worldKey = worldKey;
             this.minX = Math.min(minX, maxX);
             this.minZ = Math.min(minZ, maxZ);
@@ -87,6 +94,7 @@ public class GrassZonesConfig {
 
         // getters
         public UUID id() { return id; }
+        public String name() { return name; }
         public RegistryKey<World> worldKey() { return worldKey; }
         public int minX() { return minX; }
         public int minZ() { return minZ; }
@@ -95,28 +103,37 @@ public class GrassZonesConfig {
         public int y() { return y; }
         public long timeCreated() { return timeCreated; }
         public List<SpawnEntry> spawns() { return spawns; }
-        /** 1 su N; -1 = usa default globale. */
         public int shinyOdds() { return shinyOdds; }
 
-        public Zone withShinyOdds(int shinyOdds) {
-            return new Zone(id, worldKey, minX, minZ, maxX, maxZ, y, timeCreated, spawns, shinyOdds);
+        public Zone withName(String newName) {
+            return new Zone(id, newName, worldKey, minX, minZ, maxX, maxZ, y, timeCreated, spawns, shinyOdds);
+        }
+        public Zone withShinyOdds(int newShinyOdds) {
+            return new Zone(id, name, worldKey, minX, minZ, maxX, maxZ, y, timeCreated, spawns, newShinyOdds);
         }
         public Zone withSpawns(List<SpawnEntry> newSpawns) {
-            return new Zone(id, worldKey, minX, minZ, maxX, maxZ, y, timeCreated, newSpawns, shinyOdds);
+            return new Zone(id, name, worldKey, minX, minZ, maxX, maxZ, y, timeCreated, newSpawns, shinyOdds);
         }
     }
 
     // ======== ON-DISK STRUCTS ========
-    private static class ConfigData {
+    private static class FileWrap {
         Integer schemaVersion;
-        List<ZoneData> zones = new ArrayList<>();
+        ZoneData zone;
+    }
+    private static class ConfigDataLegacy {
+        Integer schemaVersion;
+        // NO init qui: Gson popola il campo, evita warning "queried but never updated"
+        List<ZoneData> zones;
     }
     private static class ZoneData {
         String id;
+        String name; // nuovo
         String worldKey;
         int minX, minZ, maxX, maxZ, y;
         long timeCreated;
-        List<SpawnData> spawns = new ArrayList<>();
+        // NO init qui: Gson popola il campo, noi lo inizializziamo quando serializziamo
+        List<SpawnData> spawns;
         Integer shinyOdds; // 1 su N; <=0 o null -> default globale
     }
     private static class SpawnData {
@@ -128,85 +145,40 @@ public class GrassZonesConfig {
 
     // ======== IN-MEMORY STATE ========
     private static final Map<UUID, Zone> ZONES = new LinkedHashMap<>();
+    /** Traccia il file attuale per ogni zona (per rinominare senza cercare). */
+    private static final Map<UUID, File> FILE_BY_ID = new HashMap<>();
 
     // ======== API ========
     public static void load() {
-        if (!CONFIG_FILE.exists()) {
-            CobblemonMapKitMod.LOGGER.info("[GrassZonesConfig] Config file not found, creating empty.");
-            safeRewrite(Collections.emptyList());
+        ensureDir();
+        ZONES.clear();
+        FILE_BY_ID.clear();
+
+        // Migrazione dal file legacy se presente
+        File legacy = new File("config/cobblemonmapkit/grass_zones.json");
+        if (legacy.exists()) {
+            migrateLegacy(legacy);
             return;
         }
 
-        List<Zone> loaded = new ArrayList<>();
-        boolean clean = true;
-
-        try (FileReader r = new FileReader(CONFIG_FILE)) {
-            ConfigData data = GSON.fromJson(r, ConfigData.class);
-            if (data == null || data.zones == null) clean = false;
-            int ver = (data != null && data.schemaVersion != null) ? data.schemaVersion : CURRENT_SCHEMA_VERSION;
-            if (ver != CURRENT_SCHEMA_VERSION) {
-                CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] schemaVersion {} != {} — rewriting.", ver, CURRENT_SCHEMA_VERSION);
-                clean = false;
-            }
-
-            if (data != null && data.zones != null) {
-                for (ZoneData zd : data.zones) {
-                    try {
-                        UUID id = UUID.fromString(zd.id);
-                        Identifier wid = Identifier.tryParse(zd.worldKey);
-                        if (wid == null) throw new IllegalArgumentException("bad worldKey");
-                        RegistryKey<World> wk = RegistryKey.of(RegistryKeys.WORLD, wid);
-
-                        List<SpawnEntry> spawns = new ArrayList<>();
-                        if (zd.spawns != null) {
-                            for (SpawnData sd : zd.spawns) {
-                                if (sd == null || sd.species == null || sd.species.isBlank()
-                                        || sd.minLevel <= 0 || sd.maxLevel < sd.minLevel || sd.weight <= 0) {
-                                    CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Invalid spawn in zone {}: {}", zd.id, sd);
-                                    clean = false;
-                                    continue;
-                                }
-                                spawns.add(new SpawnEntry(
-                                        sd.species,
-                                        sd.minLevel,
-                                        sd.maxLevel,
-                                        sd.weight,
-                                        parseTime(sd.time),
-                                        sd.aspect
-                                ));
-                            }
-                        }
-                        long t = zd.timeCreated == 0 ? Instant.now().toEpochMilli() : zd.timeCreated;
-                        int shinyOdds = (zd.shinyOdds == null || zd.shinyOdds <= 0) ? -1 : zd.shinyOdds;
-
-                        loaded.add(new Zone(id, wk, zd.minX, zd.minZ, zd.maxX, zd.maxZ, zd.y, t, spawns, shinyOdds));
-                    } catch (Exception ex) {
-                        CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Invalid zone, skipping: {}", (zd != null ? zd.id : "<null>"));
-                        clean = false;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Read error, rewriting: {}", e.getMessage(), e);
-            clean = false;
+        File[] files = ZONES_DIR.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".json"));
+        if (files == null || files.length == 0) {
+            CobblemonMapKitMod.LOGGER.info("[GrassZonesConfig] No zones found.");
+            return;
         }
-
-        if (!clean) {
-            safeRewrite(loaded);
-        } else {
-            ZONES.clear();
-            for (Zone z : loaded) ZONES.put(z.id(), z);
-            CobblemonMapKitMod.LOGGER.info("[GrassZonesConfig] Loaded {} zones.", ZONES.size());
+        int ok = 0, bad = 0;
+        for (File f : files) {
+            try {
+                Zone z = readZoneFile(f);
+                ZONES.put(z.id(), z);
+                FILE_BY_ID.put(z.id(), f);
+                ok++;
+            } catch (Exception e) {
+                CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Could not read {}: {}", f.getName(), e.getMessage());
+                bad++;
+            }
         }
-    }
-
-    private static TimeBand parseTime(String s) {
-        if (s == null) return TimeBand.BOTH;
-        return switch (s.toLowerCase(Locale.ROOT)) {
-            case "day" -> TimeBand.DAY;
-            case "night" -> TimeBand.NIGHT;
-            default -> TimeBand.BOTH;
-        };
+        CobblemonMapKitMod.LOGGER.info("[GrassZonesConfig] Loaded {} zones ({} invalid).", ok, bad);
     }
 
     /** Overlap 3D (stesso world e stessa Y). */
@@ -242,72 +214,51 @@ public class GrassZonesConfig {
         return false;
     }
 
+    /** Serializza tutte le zone (sincronizza/ripulisce orfani). */
     public static void save() {
         try {
-            File dir = CONFIG_FILE.getParentFile();
-            if (dir != null && !dir.exists()) {
-                boolean created = dir.mkdirs();
-                if (!created && !dir.exists()) {
-                    CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Unable to create config directory: {}", dir.getAbsolutePath());
-                }
-            }
-
-            ConfigData out = new ConfigData();
-            out.schemaVersion = CURRENT_SCHEMA_VERSION;
+            ensureDir();
+            // Scrive/aggiorna tutti i file e raccoglie quelli da tenere
+            Set<File> keep = new HashSet<>();
             for (Zone z : ZONES.values()) {
-                ZoneData zd = new ZoneData();
-                zd.id = z.id().toString();
-                zd.worldKey = z.worldKey().getValue().toString();
-                zd.minX = z.minX(); zd.minZ = z.minZ(); zd.maxX = z.maxX(); zd.maxZ = z.maxZ(); zd.y = z.y();
-                zd.timeCreated = z.timeCreated();
-                // Serializziamo -1 per chiarezza (default globale).
-                zd.shinyOdds = (z.shinyOdds() <= 0) ? -1 : z.shinyOdds();
-
-                for (SpawnEntry se : z.spawns()) {
-                    SpawnData sd = new SpawnData();
-                    sd.species = se.species;
-                    sd.minLevel = se.minLevel;
-                    sd.maxLevel = se.maxLevel;
-                    sd.weight = se.weight;
-                    sd.time = se.time.name().toLowerCase(Locale.ROOT);
-                    if (se.aspect != null && !se.aspect.isBlank()) sd.aspect = se.aspect;
-                    zd.spawns.add(sd);
-                }
-                out.zones.add(zd);
+                File f = writeZoneFile(z); // aggiorna e crea se manca
+                keep.add(f);
+                FILE_BY_ID.put(z.id(), f);
             }
-
-            File tmp = new File(CONFIG_FILE.getParent(), CONFIG_FILE.getName() + ".tmp");
-            try (FileWriter w = new FileWriter(tmp)) { GSON.toJson(out, w); }
-
-            try {
-                Files.move(tmp.toPath(), CONFIG_FILE.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException atomicNotSupported) {
-                CobblemonMapKitMod.LOGGER.debug("[GrassZonesConfig] ATOMIC_MOVE not supported, falling back to REPLACE_EXISTING.");
-                Files.move(tmp.toPath(), CONFIG_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            // elimina file orfani
+            File[] files = ZONES_DIR.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".json"));
+            if (files != null) {
+                for (File f : files) {
+                    if (!keep.contains(f)) {
+                        boolean deleted = f.delete();
+                        if (!deleted) CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Could not delete orphan {}", f.getName());
+                    }
+                }
             }
         } catch (IOException e) {
             CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Save error: {}", e.getMessage(), e);
         }
     }
 
-    /** Creazione zona con shinyOdds = -1 (usa default globale). */
-    public static UUID addZone(RegistryKey<World> worldKey,
+    /** Creazione zona (usa shinyOdds = -1 = default globale). */
+    public static UUID addZone(String name,
+                               RegistryKey<World> worldKey,
                                int minX, int minZ, int maxX, int maxZ,
                                int y,
                                List<SpawnEntry> spawns) {
-        return addZone(worldKey, minX, minZ, maxX, maxZ, y, spawns, -1);
+        return addZone(name, worldKey, minX, minZ, maxX, maxZ, y, spawns, -1);
     }
 
-    /** Creazione con shiny odds esplicite (1 su N). Usa -1 per default globale. */
-    public static UUID addZone(RegistryKey<World> worldKey,
+    /** Creazione zona con shiny odds esplicite (1 su N). -1 = default globale. */
+    public static UUID addZone(String name,
+                               RegistryKey<World> worldKey,
                                int minX, int minZ, int maxX, int maxZ,
                                int y,
                                List<SpawnEntry> spawns,
                                int shinyOdds) {
         UUID id = UUID.randomUUID();
         Zone z = new Zone(
-                id, worldKey,
+                id, name, worldKey,
                 minX, minZ, maxX, maxZ,
                 y,
                 Instant.now().toEpochMilli(),
@@ -315,18 +266,27 @@ public class GrassZonesConfig {
                 shinyOdds
         );
         ZONES.put(id, z);
-        save();
+        try {
+            File f = writeZoneFile(z);
+            FILE_BY_ID.put(id, f);
+        } catch (IOException e) {
+            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Write error on addZone {}: {}", id, e.getMessage(), e);
+        }
         return id;
     }
 
     public static boolean removeZone(UUID id) {
-        if (ZONES.remove(id) != null) { save(); return true; }
+        Zone removed = ZONES.remove(id);
+        File f = FILE_BY_ID.remove(id);
+        if (removed != null) {
+            if (f == null) f = guessFileByName(removed.name());
+            if (f.exists() && !f.delete()) {
+                CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Could not delete file {}", f.getName());
+            }
+            return true;
+        }
         return false;
     }
-
-    public static Collection<Zone> getAll() { return Collections.unmodifiableCollection(ZONES.values()); }
-
-    public static Zone get(UUID id) { return ZONES.get(id); }
 
     /** Trova tutte le zone che contengono un punto. */
     public static List<Zone> findAt(RegistryKey<World> wk, int x, int y, int z) {
@@ -339,8 +299,15 @@ public class GrassZonesConfig {
     public static boolean addSpawn(UUID zoneId, SpawnEntry entry) {
         Zone z = ZONES.get(zoneId); if (z == null) return false;
         List<SpawnEntry> ns = new ArrayList<>(z.spawns()); ns.add(entry);
-        ZONES.put(zoneId, z.withSpawns(ns));
-        save(); return true;
+        Zone nz = z.withSpawns(ns);
+        ZONES.put(zoneId, nz);
+        try {
+            File f = writeZoneFile(nz);
+            FILE_BY_ID.put(zoneId, f);
+        } catch (IOException e) {
+            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Write error on addSpawn {}: {}", zoneId, e.getMessage(), e);
+        }
+        return true;
     }
 
     /** Rimuove uno spawn per species id (case-insensitive). */
@@ -348,32 +315,283 @@ public class GrassZonesConfig {
         Zone z = ZONES.get(zoneId); if (z == null) return false;
         List<SpawnEntry> ns = new ArrayList<>();
         for (SpawnEntry e : z.spawns()) if (!e.species.equalsIgnoreCase(speciesId)) ns.add(e);
-        ZONES.put(zoneId, z.withSpawns(ns));
-        save(); return true;
+        Zone nz = z.withSpawns(ns);
+        ZONES.put(zoneId, nz);
+        try {
+            File f = writeZoneFile(nz);
+            FILE_BY_ID.put(zoneId, f);
+        } catch (IOException e) {
+            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Write error on removeSpawn {}: {}", zoneId, e.getMessage(), e);
+        }
+        return true;
     }
 
     /** Imposta shiny odds (1 su N) per zona. -1 = default globale. */
     public static boolean setZoneShinyOdds(UUID zoneId, int shinyOdds) {
         Zone z = ZONES.get(zoneId); if (z == null) return false;
-        ZONES.put(zoneId, z.withShinyOdds(shinyOdds));
-        save(); return true;
+        Zone nz = z.withShinyOdds(shinyOdds);
+        ZONES.put(zoneId, nz);
+        try {
+            File f = writeZoneFile(nz);
+            FILE_BY_ID.put(zoneId, f);
+        } catch (IOException e) {
+            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Write error on setZoneShinyOdds {}: {}", zoneId, e.getMessage(), e);
+        }
+        return true;
     }
 
-    private static void safeRewrite(List<Zone> valid) {
+    /** Rinomina la zona e rinomina il file su disco. */
+    public static boolean setZoneName(UUID zoneId, String newName) {
+        if (newName == null || newName.isBlank()) return false;
+        Zone z = ZONES.get(zoneId); if (z == null) return false;
+        Zone nz = z.withName(newName);
+        ZONES.put(zoneId, nz);
         try {
-            File dir = CONFIG_FILE.getParentFile();
-            if (dir != null && !dir.exists()) {
-                boolean created = dir.mkdirs();
-                if (!created && !dir.exists()) {
-                    CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Unable to create directory: {}", dir.getAbsolutePath());
+            File oldFile = FILE_BY_ID.get(zoneId);
+            File newFile = writeZoneFile(nz);
+            FILE_BY_ID.put(zoneId, newFile);
+            if (oldFile != null && !sameFile(oldFile, newFile) && oldFile.exists()) {
+                if (!isFileUsedByOtherZone(oldFile, zoneId)) {
+                    boolean deleted = oldFile.delete();
+                    if (!deleted) CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Could not delete old file {}", oldFile.getName());
                 }
             }
-            ZONES.clear();
-            if (valid != null) for (Zone z : valid) ZONES.put(z.id(), z);
-            save();
-            CobblemonMapKitMod.LOGGER.info("[GrassZonesConfig] File rebuilt with {} zones.", ZONES.size());
-        } catch (Exception ex) {
-            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Safe rewrite error: {}", ex.getMessage(), ex);
+        } catch (IOException e) {
+            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Write error on setZoneName {}: {}", zoneId, e.getMessage(), e);
+            return false;
+        }
+        return true;
+    }
+
+    public static Collection<Zone> getAll() { return Collections.unmodifiableCollection(ZONES.values()); }
+    public static Zone get(UUID id) { return ZONES.get(id); }
+
+    // ======== INTERNALS ========
+
+    private static void migrateLegacy(File legacy) {
+        CobblemonMapKitMod.LOGGER.info("[GrassZonesConfig] Migrating from legacy grass_zones.json to zones/ ...");
+        List<Zone> loaded = new ArrayList<>();
+        try (FileReader r = new FileReader(legacy)) {
+            ConfigDataLegacy data = GSON.fromJson(r, ConfigDataLegacy.class);
+            if (data != null && data.zones != null) {
+                for (ZoneData zd : data.zones) {
+                    try {
+                        Zone z = fromZoneData(zd);
+                        loaded.add(z);
+                    } catch (Exception ex) {
+                        CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Invalid legacy zone, skipping: {}", (zd != null ? zd.id : "<null>"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Legacy read error: {}", e.getMessage(), e);
+        }
+
+        for (Zone z : loaded) {
+            ZONES.put(z.id(), z);
+            try {
+                File f = writeZoneFile(z);
+                FILE_BY_ID.put(z.id(), f);
+            } catch (IOException e) {
+                CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Error writing migrated zone {}: {}", z.id(), e.getMessage(), e);
+            }
+        }
+
+        File bak = new File(legacy.getParentFile(), legacy.getName() + ".bak");
+        if (!legacy.renameTo(bak)) {
+            CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Could not rename legacy file, leaving it in place.");
+        }
+        CobblemonMapKitMod.LOGGER.info("[GrassZonesConfig] Migration complete: {} zones.", ZONES.size());
+    }
+
+    private static TimeBand parseTime(String s) {
+        if (s == null) return TimeBand.BOTH;
+        return switch (s.toLowerCase(Locale.ROOT)) {
+            case "day" -> TimeBand.DAY;
+            case "night" -> TimeBand.NIGHT;
+            default -> TimeBand.BOTH;
+        };
+    }
+
+    /** Gestisce il risultato di mkdirs(), evitando warning e segnalando eventuali problemi. */
+    private static void ensureDir() {
+        File parent = ZONES_DIR.getParentFile();
+        if (parent != null && !parent.exists()) {
+            boolean okParent = parent.mkdirs();
+            if (!okParent && !parent.exists()) {
+                CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Unable to create parent dir: {}", parent.getAbsolutePath());
+            }
+        }
+        if (!ZONES_DIR.exists()) {
+            boolean ok = ZONES_DIR.mkdirs();
+            if (!ok && !ZONES_DIR.exists()) {
+                CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Unable to create zones dir: {}", ZONES_DIR.getAbsolutePath());
+            }
+        }
+    }
+
+    private static String shortId(UUID id) {
+        String s = id.toString().replace("-", "");
+        return s.substring(0, 6).toUpperCase(Locale.ROOT);
+    }
+
+    private static String sanitizeForFilename(String name) {
+        // rimuove accenti e caratteri non validi, compatta spazi, tronca lunghezze eccessive
+        String n = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        n = n.replaceAll("[^\\w\\-.\\s]", "_").trim(); // keep letters, digits, _, -, ., space
+        n = n.replaceAll("\\s+", " ");
+        if (n.isEmpty()) n = "Zone";
+        if (n.length() > 80) n = n.substring(0, 80).trim();
+        return n;
+    }
+
+    private static File guessFileByName(String zoneName) {
+        String base = sanitizeForFilename(zoneName);
+        return new File(ZONES_DIR, base + ".json");
+    }
+
+    private static boolean sameFile(File a, File b) {
+        try {
+            return a.getCanonicalPath().equals(b.getCanonicalPath());
+        } catch (IOException e) {
+            return a.getAbsolutePath().equals(b.getAbsolutePath());
+        }
+    }
+
+    private static boolean isFileUsedByOtherZone(File f, UUID currentId) {
+        for (Map.Entry<UUID, File> e : FILE_BY_ID.entrySet()) {
+            if (!e.getKey().equals(currentId) && sameFile(e.getValue(), f)) return true;
+        }
+        return false;
+    }
+
+    /** Trova un filename unico per il nome desiderato, con suffissi " (2)", " (3)" se necessario. */
+    private static File uniqueFileForName(String desiredName, UUID ownerId) {
+        String base = sanitizeForFilename(desiredName);
+        File f = new File(ZONES_DIR, base + ".json");
+        if (!existsDifferentOwner(f, ownerId)) return f;
+
+        int i = 2;
+        while (true) {
+            File cand = new File(ZONES_DIR, base + " (" + i + ").json");
+            if (!existsDifferentOwner(cand, ownerId)) return cand;
+            i++;
+        }
+    }
+
+    /** Ritorna true se il file esiste ed è associato ad un id diverso (o non leggibile ma presente). */
+    private static boolean existsDifferentOwner(File f, UUID ownerId) {
+        if (!f.exists()) return false;
+        try {
+            Zone z = readZoneFile(f);
+            return !z.id().equals(ownerId);
+        } catch (Exception e) {
+            // file presente ma illeggibile => trattalo come occupato
+            return true;
+        }
+    }
+
+    /** Scrive su disco la zona, scegliendo/aggiornando il filename in base al nome. */
+    private static File writeZoneFile(Zone z) throws IOException {
+        ensureDir();
+
+        File current = FILE_BY_ID.get(z.id());
+        File target = uniqueFileForName(z.name(), z.id());
+
+        if (current != null && current.exists()) {
+            if (sameFile(current, target)) return writeJson(target, z);
+            File written = writeJson(target, z);
+            if (!isFileUsedByOtherZone(current, z.id()) && current.exists()) {
+                boolean deleted = current.delete();
+                if (!deleted) CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Could not delete old file {}", current.getName());
+            }
+            return written;
+        } else {
+            return writeJson(target, z);
+        }
+    }
+
+    private static File writeJson(File target, Zone z) throws IOException {
+        ZoneData zd = toZoneData(z);
+        FileWrap wrap = new FileWrap();
+        wrap.schemaVersion = CURRENT_SCHEMA_VERSION;
+        wrap.zone = zd;
+
+        File tmp = new File(target.getParentFile(), target.getName() + ".tmp");
+        try (FileWriter w = new FileWriter(tmp)) {
+            GSON.toJson(wrap, w);
+        }
+        try {
+            Files.move(tmp.toPath(), target.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException atomicNotSupported) {
+            CobblemonMapKitMod.LOGGER.debug("[GrassZonesConfig] ATOMIC_MOVE not supported for {}, falling back.", target.getName());
+            Files.move(tmp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        return target;
+    }
+
+    private static ZoneData toZoneData(Zone z) {
+        ZoneData zd = new ZoneData();
+        zd.id = z.id().toString();
+        zd.name = z.name();
+        zd.worldKey = z.worldKey().getValue().toString();
+        zd.minX = z.minX(); zd.minZ = z.minZ(); zd.maxX = z.maxX(); zd.maxZ = z.maxZ(); zd.y = z.y();
+        zd.timeCreated = z.timeCreated();
+        zd.shinyOdds = (z.shinyOdds() <= 0) ? -1 : z.shinyOdds();
+
+        // inizializza qui per evitare il warning sul campo mai aggiornato
+        zd.spawns = new ArrayList<>();
+        for (SpawnEntry se : z.spawns()) {
+            SpawnData sd = new SpawnData();
+            sd.species = se.species;
+            sd.minLevel = se.minLevel;
+            sd.maxLevel = se.maxLevel;
+            sd.weight = se.weight;
+            sd.time = se.time.name().toLowerCase(Locale.ROOT);
+            if (se.aspect != null && !se.aspect.isBlank()) sd.aspect = se.aspect;
+            zd.spawns.add(sd);
+        }
+        return zd;
+    }
+
+    private static Zone fromZoneData(ZoneData zd) {
+        UUID id = UUID.fromString(zd.id);
+        Identifier wid = Identifier.tryParse(zd.worldKey);
+        if (wid == null) throw new IllegalArgumentException("bad worldKey");
+        RegistryKey<World> wk = RegistryKey.of(RegistryKeys.WORLD, wid);
+
+        List<SpawnEntry> spawns = new ArrayList<>();
+        if (zd.spawns != null) {
+            for (SpawnData sd : zd.spawns) {
+                if (sd == null || sd.species == null || sd.species.isBlank()
+                        || sd.minLevel <= 0 || sd.maxLevel < sd.minLevel || sd.weight <= 0) {
+                    CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] Invalid spawn in zone {}: {}", zd.id, sd);
+                    continue;
+                }
+                spawns.add(new SpawnEntry(
+                        sd.species, sd.minLevel, sd.maxLevel, sd.weight, parseTime(sd.time), sd.aspect
+                ));
+            }
+        }
+        long t = zd.timeCreated == 0 ? Instant.now().toEpochMilli() : zd.timeCreated;
+        int shinyOdds = (zd.shinyOdds == null || zd.shinyOdds <= 0) ? -1 : zd.shinyOdds;
+        String name = (zd.name == null || zd.name.isBlank()) ? ("Zone " + shortId(id)) : zd.name;
+        return new Zone(id, name, wk, zd.minX, zd.minZ, zd.maxX, zd.maxZ, zd.y, t, spawns, shinyOdds);
+    }
+
+    private static Zone readZoneFile(File f) throws IOException {
+        try (FileReader r = new FileReader(f)) {
+            FileWrap wrap = GSON.fromJson(r, FileWrap.class);
+            int ver = (wrap != null && wrap.schemaVersion != null) ? wrap.schemaVersion : CURRENT_SCHEMA_VERSION;
+            if (wrap == null || wrap.zone == null) throw new IOException("empty or invalid wrap");
+            Zone z = fromZoneData(wrap.zone);
+            if (ver != CURRENT_SCHEMA_VERSION) {
+                // non riscriviamo subito per evitare IO durante load; save() normalizzerà
+                CobblemonMapKitMod.LOGGER.warn("[GrassZonesConfig] schemaVersion {} != {} in {}, will rewrite on save.",
+                        ver, CURRENT_SCHEMA_VERSION, f.getName());
+            }
+            return z;
         }
     }
 }

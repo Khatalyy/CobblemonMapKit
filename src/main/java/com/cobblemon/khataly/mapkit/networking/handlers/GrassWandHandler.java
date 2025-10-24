@@ -17,8 +17,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class GrassWandHandler {
     private static final int MAX_SIDE = 64;
@@ -46,7 +46,10 @@ public class GrassWandHandler {
         int maxZ = Math.max(a.getZ(), b.getZ());
         int y    = Math.min(a.getY(), b.getY());
 
-        if ((maxX - minX + 1) > MAX_SIDE || (maxZ - minZ + 1) > MAX_SIDE) return;
+        if ((maxX - minX + 1) > MAX_SIDE || (maxZ - minZ + 1) > MAX_SIDE) {
+            player.sendMessage(Text.literal("Area too large (max side " + MAX_SIDE + ")."), false);
+            return;
+        }
 
         // Prevent creating a zone that overlaps another one (same world and Y)
         if (GrassZonesConfig.overlaps(world.getRegistryKey(), minX, minZ, maxX, maxZ, y)) {
@@ -87,23 +90,38 @@ public class GrassWandHandler {
             }
         }
 
-        // ALWAYS create the zone (even if no grass was placed)
-        var defaultSpawns = java.util.List.of(
-                // Examples: one DAY, one NIGHT, one BOTH
+        // Default spawns (examples)
+        List<GrassZonesConfig.SpawnEntry> defaultSpawns = List.of(
                 new GrassZonesConfig.SpawnEntry("cobblemon:sentret", 3, 7, 30, GrassZonesConfig.TimeBand.DAY),
                 new GrassZonesConfig.SpawnEntry("cobblemon:rattata", 3, 7, 30, GrassZonesConfig.TimeBand.NIGHT),
                 new GrassZonesConfig.SpawnEntry("cobblemon:oddish", 5, 9, 10, GrassZonesConfig.TimeBand.BOTH),
                 new GrassZonesConfig.SpawnEntry("cobblemon:geodude", 10, 14, 30, GrassZonesConfig.TimeBand.BOTH, "alolan")
         );
 
+        // New: human-friendly incremental name (Zone1, Zone2, ...)
+        String zoneName = nextAvailableZoneName();
+
         UUID id = GrassZonesConfig.addZone(
+                zoneName,
                 world.getRegistryKey(),
                 minX, minZ, maxX, maxZ,
                 y,
                 defaultSpawns
         );
 
-        player.sendMessage(Text.literal("Grass zone created: " + id + " (blocks placed: " + placed + ")"), false);
+        player.sendMessage(Text.literal("Grass zone created: " + zoneName + " (" + id + "). Blocks placed: " + placed), false);
+    }
+
+    /** Builds next free name: Zone1, Zone2, ... */
+    private static String nextAvailableZoneName() {
+        Set<String> existing = GrassZonesConfig.getAll()
+                .stream().map(z -> z.name().toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+        int i = 1;
+        while (true) {
+            String candidate = ("Zone" + i);
+            if (!existing.contains(candidate.toLowerCase(Locale.ROOT))) return candidate;
+            i++;
+        }
     }
 
     /** Reads "grass_mode" from the wand (main/offhand). Default short=false. */
