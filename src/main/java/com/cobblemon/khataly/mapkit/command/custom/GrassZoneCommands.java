@@ -61,6 +61,7 @@ public class GrassZoneCommands {
                                     src.sendFeedback(() -> Text.literal("§6— Zone checklist —"), false);
                                     src.sendFeedback(() -> Text.literal(" §7Name:§f " + z.name()), false);
                                     src.sendFeedback(() -> Text.literal(" §7ID:§f " + z.id()), false);
+                                    src.sendFeedback(() -> Text.literal(" §7Y range:§f " + z.minY() + " .. " + z.maxY()), false);
 
                                     var spawns = z.spawns();
                                     if (spawns == null || spawns.isEmpty()) {
@@ -92,7 +93,8 @@ public class GrassZoneCommands {
                                         count++;
                                         src.sendFeedback(() -> Text.literal("§6— Zone §e" + z.name() + "§6 —"), false);
                                         src.sendFeedback(() -> Text.literal(" §7ID:§f " + z.id()), false);
-                                        src.sendFeedback(() -> Text.literal(" §7Dimension:§f " + z.worldKey().getValue() + " §7Y:§f " + z.y()), false);
+                                        src.sendFeedback(() -> Text.literal(" §7Dimension:§f " + z.worldKey().getValue()
+                                                + " §7Y:§f " + z.minY() + " .. " + z.maxY()), false);
                                         src.sendFeedback(() -> Text.literal(" §7Area:§f [" + z.minX() + ", " + z.minZ() + "] → [" + z.maxX() + ", " + z.maxZ() + "]"), false);
 
                                         int shown = 0;
@@ -202,46 +204,51 @@ public class GrassZoneCommands {
         return zones.isEmpty() ? null : zones.getFirst();
     }
 
-    private static int clearGrassInZone(World world, GrassZonesConfig.Zone z) {
-        int y = z.y();
+    /** Rimuove short_grass / grass e tall_grass su TUTTO il volume verticale della zona. */
+    private static int clearGrassInZone(World world, GrassZonesConfig.Zone zone) {
         int removed = 0;
         Block shortGrass = resolveShortGrass();
 
-        for (int x = z.minX(); x <= z.maxX(); x++) {
-            for (int zed = z.minZ(); zed <= z.maxZ(); zed++) {
-                BlockPos pos = new BlockPos(x, y, zed);
-                BlockState st = world.getBlockState(pos);
+        for (int y = zone.minY(); y <= zone.maxY(); y++) {
+            for (int x = zone.minX(); x <= zone.maxX(); x++) {
+                for (int zed = zone.minZ(); zed <= zone.maxZ(); zed++) {
+                    BlockPos pos = new BlockPos(x, y, zed);
+                    BlockState st = world.getBlockState(pos);
 
-                if (shortGrass != null && st.isOf(shortGrass)) {
-                    world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
-                    removed++;
-                    continue;
-                }
-
-                if (st.isOf(Blocks.TALL_GRASS)) {
-                    var half = st.get(Properties.DOUBLE_BLOCK_HALF);
-                    if (half == DoubleBlockHalf.LOWER) {
-                        BlockPos up = pos.up();
-                        if (world.getBlockState(up).isOf(Blocks.TALL_GRASS)) {
-                            world.setBlockState(up, Blocks.AIR.getDefaultState(), 3);
-                        }
+                    // Short grass (o legacy grass)
+                    if (shortGrass != null && st.isOf(shortGrass)) {
                         world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
-                    } else {
-                        BlockPos down = pos.down();
-                        if (world.getBlockState(down).isOf(Blocks.TALL_GRASS)) {
-                            world.setBlockState(down, Blocks.AIR.getDefaultState(), 3);
-                        }
-                        world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                        removed++;
+                        continue;
                     }
-                    removed++;
-                    continue;
-                }
 
-                BlockState below = world.getBlockState(pos.down());
-                if (below.isOf(Blocks.TALL_GRASS)) {
-                    world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
-                    world.setBlockState(pos.down(), Blocks.AIR.getDefaultState(), 3);
-                    removed++;
+                    // Tall grass: gestisce upper/lower e rimuove entrambe le metà
+                    if (st.isOf(Blocks.TALL_GRASS)) {
+                        var half = st.get(Properties.DOUBLE_BLOCK_HALF);
+                        if (half == DoubleBlockHalf.LOWER) {
+                            BlockPos up = pos.up();
+                            if (world.getBlockState(up).isOf(Blocks.TALL_GRASS)) {
+                                world.setBlockState(up, Blocks.AIR.getDefaultState(), 3);
+                            }
+                            world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                        } else {
+                            BlockPos down = pos.down();
+                            if (world.getBlockState(down).isOf(Blocks.TALL_GRASS)) {
+                                world.setBlockState(down, Blocks.AIR.getDefaultState(), 3);
+                            }
+                            world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                        }
+                        removed++;
+                        continue;
+                    }
+
+                    // Caso edge: tall_grass sotto (rimozione a coppia)
+                    BlockState below = world.getBlockState(pos.down());
+                    if (below.isOf(Blocks.TALL_GRASS)) {
+                        world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+                        world.setBlockState(pos.down(), Blocks.AIR.getDefaultState(), 3);
+                        removed++;
+                    }
                 }
             }
         }

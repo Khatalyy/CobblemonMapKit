@@ -24,7 +24,7 @@ import net.minecraft.util.math.random.Random;
 import java.util.*;
 
 /**
- * Incontri “a passo” nelle Grass Zones:
+ * Incontri “a passo” nelle Grass Zones (supporto minY..maxY):
  * - Cooldown per player, trigger su cambio blocco;
  * - Filtro DAY/NIGHT/BOTH;
  * - Shiny odds per zona (1/N; -1 = default globale);
@@ -100,13 +100,13 @@ public class GrassEncounterTicker {
             var world = player.getWorld();
             var wk = world.getRegistryKey();
 
-            // zone alla posizione esatta (incluso Y)
+            // zone alla posizione esatta (X/Z nel box e Y nel range minY..maxY)
             var zones = GrassZonesConfig.findAt(wk, now.getX(), now.getY(), now.getZ());
             if (zones.isEmpty()) continue;
 
             // scegliamo la prima zona valida; si può randomizzare se serve
             GrassZonesConfig.Zone zone = zones.getFirst();
-            if (now.getY() != zone.y()) continue;
+            // (Niente check su Y singolo: il match per Y è già garantito da findAt)
 
             // già in battaglia? niente encounter
             if (isInBattle(player)) continue;
@@ -243,11 +243,45 @@ public class GrassEncounterTicker {
         pokemon.heal();
 
         var sw = (ServerWorld) player.getWorld();
-        BlockPos base = player.getBlockPos();
-        BlockPos pos = base.add(1, 0, 0);
-        Vec3d vec = new Vec3d(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
 
-        PokemonEntity entity = pokemon.sendOut(sw, vec, null, e -> null);
+        // -------- NUOVO: spawn alla stessa Y del player --------
+        // targetY = Y "reale" del player (non solo il BlockPos.getY()).
+        final double targetY = player.getY();
+
+        // proviamo alcuni offset vicino al player mantenendo la stessa Y
+        // ordine: +X, -X, +Z, -Z, +X+Z, -X-Z
+        Vec3d spawnPos = null;
+        Vec3d base = player.getPos(); // double-precision position
+        Vec3d[] candidates = new Vec3d[] {
+                new Vec3d(base.x + 1.0, targetY, base.z),
+                new Vec3d(base.x - 1.0, targetY, base.z),
+                new Vec3d(base.x, targetY, base.z + 1.0),
+                new Vec3d(base.x, targetY, base.z - 1.0),
+                new Vec3d(base.x + 1.0, targetY, base.z + 1.0),
+                new Vec3d(base.x - 1.0, targetY, base.z - 1.0)
+        };
+
+        for (Vec3d cand : candidates) {
+            // centro del blocco più vicino
+            BlockPos bp = BlockPos.ofFloored(cand.x, cand.y, cand.z);
+            // deve esserci aria nello spazio del Pokémon (grezzo: blocco target e quello sopra aria)
+            boolean airHere  = sw.isAir(bp);
+            boolean airAbove = sw.isAir(bp.up());
+            // e terreno solido sotto (per evitare di spawna­re sospesi)
+            boolean solidBelow = !sw.isAir(bp.down());
+            if (airHere && airAbove && solidBelow) {
+                spawnPos = new Vec3d(bp.getX() + 0.5, targetY, bp.getZ() + 0.5);
+                break;
+            }
+        }
+
+        // fallback: comunque a +1 in X, stessa Y
+        if (spawnPos == null) {
+            spawnPos = new Vec3d(Math.floor(base.x) + 1.5, targetY, Math.floor(base.z) + 0.5);
+        }
+        // -------------------------------------------------------
+
+        PokemonEntity entity = pokemon.sendOut(sw, spawnPos, null, e -> null);
         if (entity == null) return false;
 
         // Traccia selvatico per possibile despawn in caso di fuga
@@ -273,4 +307,5 @@ public class GrassEncounterTicker {
 
         return true;
     }
+
 }

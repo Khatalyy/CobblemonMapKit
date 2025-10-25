@@ -7,9 +7,10 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
+/** Invia due corner opposti (a,b). Il server calcola min/max su X,Y,Z. */
 public record PlaceGrassC2SPacket(BlockPos a, BlockPos b) implements CustomPayload {
     public static final CustomPayload.Id<PlaceGrassC2SPacket> ID =
-            new CustomPayload.Id<>(Identifier.of(CobblemonMapKitMod.MOD_ID, "place_grass"));
+            new CustomPayload.Id<>(Identifier.of(CobblemonMapKitMod.MOD_ID, "place_grass")); // ok così; bumpa se cambi formato
 
     public static final PacketCodec<RegistryByteBuf, PlaceGrassC2SPacket> CODEC =
             PacketCodec.tuple(

@@ -44,15 +44,18 @@ public class GrassWandHandler {
         int maxX = Math.max(a.getX(), b.getX());
         int minZ = Math.min(a.getZ(), b.getZ());
         int maxZ = Math.max(a.getZ(), b.getZ());
-        int y    = Math.min(a.getY(), b.getY());
+
+        // NUOVO: range verticale completo
+        int minY = Math.min(a.getY(), b.getY());
+        int maxY = Math.max(a.getY(), b.getY());
 
         if ((maxX - minX + 1) > MAX_SIDE || (maxZ - minZ + 1) > MAX_SIDE) {
             player.sendMessage(Text.literal("Area too large (max side " + MAX_SIDE + ")."), false);
             return;
         }
 
-        // Prevent creating a zone that overlaps another one (same world and Y)
-        if (GrassZonesConfig.overlaps(world.getRegistryKey(), minX, minZ, maxX, maxZ, y)) {
+        // NUOVO: prevenzione overlap 3D (usa il range Y completo)
+        if (GrassZonesConfig.overlaps(world.getRegistryKey(), minX, minZ, maxX, maxZ, minY, maxY)) {
             player.sendMessage(Text.literal("Cannot create the grass zone: it overlaps an existing one."), false);
             return;
         }
@@ -63,28 +66,31 @@ public class GrassWandHandler {
         Block shortGrassBlock = resolveShortGrass();
         int placed = 0;
 
-        // PLACE GRASS: only if air above and GRASS_BLOCK below
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                BlockPos pos   = new BlockPos(x, y, z);
-                BlockPos below = pos.down();
+        // NUOVO: posizionamento erba su tutto il volume selezionato (scansione per-Y)
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    BlockPos pos   = new BlockPos(x, y, z);
+                    BlockPos below = pos.down();
 
-                if (!world.isAir(pos)) continue;
-                if (!world.getBlockState(below).isOf(Blocks.GRASS_BLOCK)) continue;
+                    if (!world.isAir(pos)) continue;
+                    if (!world.getBlockState(below).isOf(Blocks.GRASS_BLOCK)) continue;
 
-                if (tallMode) {
-                    if (!world.isAir(pos.up())) continue; // needs 2 air blocks
-                    BlockState tall = Blocks.TALL_GRASS.getDefaultState();
-                    if (tall.canPlaceAt(world, pos)) {
-                        TallPlantBlock.placeAt(world, tall, pos, 3);
-                        placed++;
-                    }
-                } else {
-                    if (shortGrassBlock == null) continue;
-                    BlockState st = shortGrassBlock.getDefaultState();
-                    if (st.canPlaceAt(world, pos)) {
-                        world.setBlockState(pos, st, 3);
-                        placed++;
+                    if (tallMode) {
+                        // Tall grass richiede 2 blocchi d'aria (pos e pos.up())
+                        if (!world.isAir(pos.up())) continue;
+                        BlockState tall = Blocks.TALL_GRASS.getDefaultState();
+                        if (tall.canPlaceAt(world, pos)) {
+                            TallPlantBlock.placeAt(world, tall, pos, 3);
+                            placed++;
+                        }
+                    } else {
+                        if (shortGrassBlock == null) continue;
+                        BlockState st = shortGrassBlock.getDefaultState();
+                        if (st.canPlaceAt(world, pos)) {
+                            world.setBlockState(pos, st, 3);
+                            placed++;
+                        }
                     }
                 }
             }
@@ -101,11 +107,12 @@ public class GrassWandHandler {
         // New: human-friendly incremental name (Zone1, Zone2, ...)
         String zoneName = nextAvailableZoneName();
 
+        // NUOVO: creazione zona con range verticale minY..maxY
         UUID id = GrassZonesConfig.addZone(
                 zoneName,
                 world.getRegistryKey(),
                 minX, minZ, maxX, maxZ,
-                y,
+                minY, maxY,
                 defaultSpawns
         );
 

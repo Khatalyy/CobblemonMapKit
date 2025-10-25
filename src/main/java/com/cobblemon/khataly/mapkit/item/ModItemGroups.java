@@ -21,6 +21,7 @@ public class ModItemGroups {
                         entries.add(ModBlocks.CUTTABLE_TREE);
                         entries.add(ModBlocks.MOVABLE_ROCK);
                         entries.add(ModBlocks.CLIMBABLE_ROCK);
+                        entries.add(ModBlocks.DIRECTIONAL_PANEL_BLOCK);
                         entries.add(ModItems.BADGE_CASE);
                         entries.add(ModItems.FIRE_BADGE);
                         entries.add(ModItems.WATER_BADGE);

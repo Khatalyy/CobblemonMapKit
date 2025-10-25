@@ -4,7 +4,7 @@
   "block.mapkit.movable_rock": "Movable Rock",
   "block.mapkit.climbable_rock": "Climbable Rock",
   "block.mapkit.ultrahole_portal": "Ultra Wormhole Portal",
-
+  "block.mapkit.directional_panel_block": "Directional Panel Block",
   "itemgroup.mapkit.mapkit_group": "Cobblemon Map Kit Group",
 
   "item.mapkit.badge_case": "Badge Case",

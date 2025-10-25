@@ -7,6 +7,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public class ModSounds {
+    public static final SoundEvent DIRECTIONAL_PANEL_BLOCK = registerSoundEvent("directional_panel_block");
     public static final SoundEvent BREAKABLE_ROCK = registerSoundEvent("breakable_rock");
     public static final SoundEvent CUTTABLE_TREE = registerSoundEvent("cuttable_tree");
     public static final SoundEvent MOVABLE_ROCK = registerSoundEvent("movable_rock");

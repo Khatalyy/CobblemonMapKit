@@ -92,9 +92,12 @@ public class GrassWandClient {
                     double maxX = Math.max(z.minX(), z.maxX()) + 1;
                     double minZ = Math.min(z.minZ(), z.maxZ());
                     double maxZ = Math.max(z.minZ(), z.maxZ()) + 1;
-                    double y = z.y();
 
-                    Box box = new Box(minX, y, minZ, maxX, y + 1, maxZ)
+                    // NUOVO: range verticale completo
+                    double minY = Math.min(z.minY(), z.maxY());
+                    double maxY = Math.max(z.minY(), z.maxY()) + 1;
+
+                    Box box = new Box(minX, minY, minZ, maxX, maxY, maxZ)
                             .offset(-camX, -camY, -camZ);
 
                     // Yellow overlay (transparent fill + strong outline)
@@ -105,14 +108,15 @@ public class GrassWandClient {
 
             // 2) Draw current selection (BLUE), if any
             if (selecting && startPos != null && curPos != null) {
-                // aligned to blocks (+1 to cover full voxels), 1-block thick around the selection plane
+                // Box 3D dai due corner selezionati (+1 su max per coprire il voxel intero)
                 double minX = Math.min(startPos.getX(), curPos.getX());
                 double minY = Math.min(startPos.getY(), curPos.getY());
                 double minZ = Math.min(startPos.getZ(), curPos.getZ());
                 double maxX = Math.max(startPos.getX(), curPos.getX()) + 1;
+                double maxY = Math.max(startPos.getY(), curPos.getY()) + 1;
                 double maxZ = Math.max(startPos.getZ(), curPos.getZ()) + 1;
 
-                Box sel = new Box(minX, minY, minZ, maxX, minY + 1, maxZ)
+                Box sel = new Box(minX, minY, minZ, maxX, maxY, maxZ)
                         .offset(-camX, -camY, -camZ);
 
                 // Blue overlay for the live selection

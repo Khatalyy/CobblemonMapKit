@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "mapkit:block/directional_panel_block"
+  }
+}

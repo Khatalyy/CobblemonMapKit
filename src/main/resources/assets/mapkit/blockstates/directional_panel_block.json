@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "mapkit:block/directional_panel_block" },
+    "facing=south": { "model": "mapkit:block/directional_panel_block", "y": 180 },
+    "facing=west":  { "model": "mapkit:block/directional_panel_block", "y": 270 },
+    "facing=east":  { "model": "mapkit:block/directional_panel_block", "y": 90 }
+  }
+}

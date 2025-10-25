@@ -1,4 +1,10 @@
 {
+  "directional_panel_block": {
+  "subtitles": "sounds.mapkit.directional_panel_block",
+  "sounds": [
+    "mapkit:directional_panel_block"
+  ]
+},
   "breakable_rock": {
     "subtitles": "sounds.mapkit.breakable_rock",
     "sounds": [
