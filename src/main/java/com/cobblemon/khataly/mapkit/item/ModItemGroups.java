@@ -43,6 +43,7 @@ public class ModItemGroups {
                         entries.add(ModItems.FLYING_BADGE);
                         entries.add(ModItems.GRASS_WAND);
                         entries.add(ModItems.RUNNING_SHOES);
+                        entries.add(ModItems.BICYCLE);
                     }).build());
 
     public static void registerItemGroups(){

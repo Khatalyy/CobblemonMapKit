@@ -1,10 +1,7 @@
 package com.cobblemon.khataly.mapkit.item;
 
 import com.cobblemon.khataly.mapkit.CobblemonMapKitMod;
-import com.cobblemon.khataly.mapkit.item.custom.BadgeCaseItem;
-import com.cobblemon.khataly.mapkit.item.custom.BadgeItem;
-import com.cobblemon.khataly.mapkit.item.custom.GrassWandItem;
-import com.cobblemon.khataly.mapkit.item.custom.RunningShoesItem;
+import com.cobblemon.khataly.mapkit.item.custom.*;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ArmorMaterials;
 import net.minecraft.item.Item;
@@ -36,6 +33,10 @@ public class ModItems {
                     new Item.Settings().maxCount(1),
                     0.50                              // +50% velocità
             ));
+
+    public static final Item BICYCLE = registerItem("bicycle",
+            new BicycleItem(new Item.Settings().maxCount(1)));
+
     public static final Item GHOST_BADGE = registerItem("ghost_badge",
             new BadgeItem(new Item.Settings().maxCount(1)));
 
