@@ -34,6 +34,12 @@ public class ModItems {
                     0.50                              // +50% velocità
             ));
 
+    public static final Item WAILMER_WATERING_CAN = registerItem("wailmer_watering_can",
+            new WailmerWateringCanItem(
+                    new Item.Settings().maxCount(1)
+            ));
+
+
     public static final Item BICYCLE = registerItem("bicycle",
             new BicycleItem(new Item.Settings().maxCount(1)));
 

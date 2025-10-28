@@ -44,6 +44,7 @@ public class ModItemGroups {
                         entries.add(ModItems.GRASS_WAND);
                         entries.add(ModItems.RUNNING_SHOES);
                         entries.add(ModItems.BICYCLE);
+                        entries.add(ModItems.WAILMER_WATERING_CAN);
                     }).build());
 
     public static void registerItemGroups(){

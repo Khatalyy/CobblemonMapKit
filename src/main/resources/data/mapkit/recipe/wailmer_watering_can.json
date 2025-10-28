@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BBB",
+    " W ",
+    "III"
+  ],
+  "key": {
+    "B": { "item": "minecraft:bone" },
+    "W": { "item": "minecraft:water_bucket" },
+    "I": { "item": "minecraft:iron_ingot" }
+  },
+  "result": { "id": "mapkit:wailmer_watering_can", "count": 1 }
+}
