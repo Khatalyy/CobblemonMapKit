@@ -39,6 +39,7 @@ public class ModNetworking {
         PayloadTypeRegistry.playS2C().register(FlashMenuS2CPacket.ID,   FlashMenuS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(TeleportMenuS2CPacket.ID, TeleportMenuS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(UltraHoleMenuS2CPacket.ID, UltraHoleMenuS2CPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(RotatePlayerS2CPacket.ID, RotatePlayerS2CPacket.CODEC);
 
         PayloadTypeRegistry.playC2S().register(RockSmashPacketC2S.ID,   RockSmashPacketC2S.CODEC);
         PayloadTypeRegistry.playC2S().register(CutPacketC2S.ID,         CutPacketC2S.CODEC);

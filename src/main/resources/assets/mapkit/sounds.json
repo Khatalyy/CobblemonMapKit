@@ -47,6 +47,12 @@
       "mapkit:climbable_rock"
     ]
   },
+  "teleport_block": {
+    "subtitles": "sounds.mapkit.teleport_block",
+    "sounds": [
+      "mapkit:teleport_block"
+    ]
+  },
   "movable_rock": {
     "subtitles": "sounds.mapkit.movable_rock",
     "sounds": [
