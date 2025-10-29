@@ -80,7 +80,6 @@ public class TeleportBlock extends BlockWithEntity implements BlockEntityProvide
         }
 
         // Animation + teleport: lands ABOVE the paired block (safe position search handled in manager)
-        sp.sendMessage(Text.literal("§bStepping on teleport block..."), true);
         TeleportAnimationManager.queueTeleport(sp, targetWorld, target.pos());
     }
 
