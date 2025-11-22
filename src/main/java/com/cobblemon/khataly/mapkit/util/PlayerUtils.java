@@ -23,7 +23,7 @@ public class PlayerUtils {
     /* ================= Cobblemon helpers ================= */
 
     public static boolean hasMove(ServerPlayerEntity player, String hm) {
-        MoveTemplate moveToFind = Moves.INSTANCE.getByName(hm);
+        MoveTemplate moveToFind = Moves.getByName(hm);
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
         for (Pokemon pokemon : party) {
             for (Move move : pokemon.getMoveSet().getMoves()) {
@@ -41,7 +41,7 @@ public class PlayerUtils {
     }
 
     public static RenderablePokemon getRenderPokemonByMove(ServerPlayerEntity player, String hm) {
-        MoveTemplate HM = Moves.INSTANCE.getByName(hm);
+        MoveTemplate HM = Moves.getByName(hm);
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
         for (Pokemon pokemon : party) {
             for (Move move : pokemon.getMoveSet().getMoves()) {
@@ -52,7 +52,7 @@ public class PlayerUtils {
     }
 
     public static Boolean pokemonHasMoveToGUI(ServerPlayerEntity player, UUID pokemonId, String hm) {
-        MoveTemplate hmToFind = Moves.INSTANCE.getByName(hm);
+        MoveTemplate hmToFind = Moves.getByName(hm);
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
         for (Pokemon pokemon : party) {
             if (!pokemon.getUuid().equals(pokemonId)) continue;

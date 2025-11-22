@@ -96,7 +96,8 @@ public class AnimationMoveScreen extends Screen {
                 9.0f,
                 true,
                 true,
-                1f, 1f, 1f, 1f
+                1f, 1f, 1f, 1f,
+                0,0
         );
 
         context.getMatrices().pop();

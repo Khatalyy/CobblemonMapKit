@@ -225,7 +225,7 @@ public class GrassEncounterTicker {
         String key = speciesId == null ? "" : speciesId.toLowerCase(Locale.ROOT);
         if (key.contains(":")) key = key.substring(key.indexOf(':') + 1);
 
-        Species species = PokemonSpecies.INSTANCE.getByName(key);
+        Species species = PokemonSpecies.getByName(key);
         if (species == null) return false;
 
         Pokemon pokemon = new Pokemon();

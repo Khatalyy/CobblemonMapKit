@@ -4,6 +4,7 @@ import com.cobblemon.khataly.mapkit.CobblemonMapKitMod;
 import com.cobblemon.mod.common.pokemon.RenderablePokemon;
 import com.cobblemon.mod.common.pokemon.Species;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtString;
@@ -60,7 +61,7 @@ public record AnimationHMPacketS2C(RenderablePokemon pokemon) implements CustomP
                         aspects.add(aspectCodec.decode(buf));
                     }
 
-                    return new AnimationHMPacketS2C(new RenderablePokemon(species, aspects));
+                    return new AnimationHMPacketS2C(new RenderablePokemon(species, aspects, ItemStack.EMPTY));
                 }
 
                 @Override

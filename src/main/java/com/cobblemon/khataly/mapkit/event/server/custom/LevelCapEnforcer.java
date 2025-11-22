@@ -6,7 +6,7 @@ import com.cobblemon.khataly.mapkit.util.LevelCapService;
 import com.cobblemon.mod.common.api.Priority;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.pokeball.ThrownPokeballHitEvent;
-import com.cobblemon.mod.common.api.events.pokemon.ExperienceGainedPreEvent;
+import com.cobblemon.mod.common.api.events.pokemon.ExperienceGainedEvent;
 import com.cobblemon.mod.common.api.events.pokemon.LevelUpEvent;
 import com.cobblemon.mod.common.api.events.pokemon.PokemonCapturedEvent;
 import com.cobblemon.mod.common.api.events.pokemon.PokemonGainedEvent;
@@ -73,7 +73,7 @@ public final class LevelCapEnforcer {
     // =========================================================
     //                           EXP
     // =========================================================
-    private static void onExperienceGainedPre(ExperienceGainedPreEvent event) {
+    private static void onExperienceGainedPre(ExperienceGainedEvent event) {
         if (!LevelCapConfig.isEnabled()) return;
 
         Object pokemon = event.getPokemon();
@@ -106,7 +106,7 @@ public final class LevelCapEnforcer {
         }
 
         // non-candy: trim sempre; candy: trim solo se clampGainedOverCap==true
-        boolean shouldTrim = !isCandyGain || (isCandyGain && LevelCapConfig.isClampGainedOverCap());
+        boolean shouldTrim = !isCandyGain || LevelCapConfig.isClampGainedOverCap();
         if (shouldTrim && incomingExp > expToCap) {
             if (setExpAmountOnAnyExpEvent(event, expToCap)) {
                 notify(owner, (isCandyGain ? "§aCandy" : "§aEXP") + " trimmed to reach level cap " + cap + ".");

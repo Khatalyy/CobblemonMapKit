@@ -24,7 +24,6 @@ import java.util.*;
  * - Quando trova un item collegato a una LABEL, applica la LABEL (se non già applicata)
  * Messaggi al player:
  *   - §a verde = progresso sbloccato / info positiva
- *
  * Rispetta LevelCapConfig.isEnabled(): se false non fa nulla.
  */
 public final class LevelCapProgressionWatcher {

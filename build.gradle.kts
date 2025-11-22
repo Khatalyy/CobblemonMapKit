@@ -1,12 +1,12 @@
 plugins {
     id("java")
-    id("dev.architectury.loom") version("1.7-SNAPSHOT")
+    id("dev.architectury.loom") version("1.11-SNAPSHOT")
     id("architectury-plugin") version("3.4-SNAPSHOT")
-    kotlin("jvm") version "1.9.23"
+    kotlin("jvm") version "2.2.20"
 }
 
 group = "com.cobblemon.khataly.mapkit"
-version = "1.0.5-SNAPSHOT"
+version = "1.0.6-SNAPSHOT"
 
 architectury {
     platformSetupLoomIde()
@@ -29,21 +29,20 @@ repositories {
 }
 
 dependencies {
+    // Minecraft + mappings
     minecraft("net.minecraft:minecraft:1.21.1")
     mappings("net.fabricmc:yarn:1.21.1+build.3:v2")
 
-    // Fabric Loader
-    modImplementation("net.fabricmc:fabric-loader:0.16.14")
+    // Fabric loader + API
+    modImplementation("net.fabricmc:fabric-loader:0.17.2")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:0.116.6+1.21.1")
+    modImplementation(fabricApi.module("fabric-command-api-v2", "0.116.6+1.21.1"))
 
-    // Fabric API
-    modImplementation("net.fabricmc.fabric-api:fabric-api:0.116.4+1.21.1")
-    modImplementation(fabricApi.module("fabric-command-api-v2", "0.116.4+1.21.1"))
-
-    // Fabric Language Kotlin compatibile con 1.21.1
-    modImplementation("net.fabricmc:fabric-language-kotlin:1.12.3+kotlin.2.0.21")
+    // Kotlin (runtime su Fabric)
+    modImplementation("net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20")
 
     // Cobblemon
-    modImplementation("com.cobblemon:fabric:1.6.1+1.21.1")
+    modImplementation("com.cobblemon:fabric:1.7.0+1.21.1")
 
     // Test
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")

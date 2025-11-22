@@ -67,7 +67,14 @@ public class FlyMenuOption {
                         return Unit.INSTANCE;
                     };
 
-                    InteractWheelOption option = new InteractWheelOption(icon, null, tooltip, colourFunc, onPressFunc);
+                    InteractWheelOption option = new InteractWheelOption(
+                            icon,        // iconResource
+                            null,        // secondaryIconResource
+                            true,        // enabled (o una condizione tua)
+                            tooltip,     // tooltipText
+                            colourFunc,  // colour
+                            onPressFunc  // onPress
+                    );
                     event.addFillingOption(option);
                     return Unit.INSTANCE;
                 });
