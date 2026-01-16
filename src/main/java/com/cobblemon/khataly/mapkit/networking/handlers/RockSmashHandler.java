@@ -16,6 +16,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ public final class RockSmashHandler {
                     NetUtil.msg(p, "⚠️ There's nothing to break here!");
                     return;
                 }
-                if (RestoreManager.get().isBusy(pos)) {
+                if (RestoreManager.get().isBusy((ServerWorld)p.getWorld(), pos))  {
                     NetUtil.msg(p, "⏳ The block has already been smashed, wait for it to return!");
                     return;
                 }
@@ -48,7 +49,7 @@ public final class RockSmashHandler {
                 NetUtil.playPlayerSound(p, ModSounds.BREAKABLE_ROCK);
 
                 p.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
-                RestoreManager.get().addTimed(pos, original, HMConfig.ROCKSMASH_RESPAWN);
+                RestoreManager.get().addTimed((ServerWorld)p.getWorld(), pos, original, HMConfig.ROCKSMASH_RESPAWN);
 
                 NetUtil.sendParticles(p, ParticleTypes.CLOUD, pos, 0.3f, 0.3f, 0.3f, 0.1f, 20);
                 LOGGER.info("Block Rock removed at {}, restore timer started", pos);
@@ -63,7 +64,7 @@ public final class RockSmashHandler {
     }
 
     private static void spawnWildPokemonAttack(ServerPlayerEntity player) {
-        Species species = PokemonSpecies.INSTANCE.getByName("geodude");
+        Species species = PokemonSpecies.getByName("geodude");
         if (species == null) {
             LOGGER.warn("Pokemon spec not found!");
             return;

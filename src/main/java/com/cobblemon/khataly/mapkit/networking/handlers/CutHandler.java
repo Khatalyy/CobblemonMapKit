@@ -10,6 +10,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,17 +23,19 @@ public final class CutHandler {
         ServerPlayNetworking.registerGlobalReceiver(CutPacketC2S.ID, (payload, ctx) -> {
             ServerPlayerEntity p = ctx.player();
             ctx.server().execute(() -> {
+                ServerWorld w = (ServerWorld) p.getWorld();
                 BlockPos pos = payload.pos();
 
                 if (!NetUtil.requireMove(p, "cut", "❌ No Pokémon in your party knows Cut!")) return;
                 if (!NetUtil.requireItem(p, HMConfig.CUT.item, HMConfig.CUT.message)) return;
 
-                BlockState original = p.getWorld().getBlockState(pos);
+                BlockState original = w.getBlockState(pos);
                 if (original.isAir()) {
                     NetUtil.msg(p, "⚠️ There's nothing to cut here!");
                     return;
                 }
-                if (RestoreManager.get().isBusy(pos)) {
+
+                if (RestoreManager.get().isBusy(w, pos)) {
                     NetUtil.msg(p, "⏳ The block has already been cut, wait for it to return!");
                     return;
                 }
@@ -41,8 +44,8 @@ public final class CutHandler {
                 NetUtil.msg(p, "💥 you used Cut!");
                 NetUtil.playPlayerSound(p, ModSounds.CUTTABLE_TREE);
 
-                p.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
-                RestoreManager.get().addTimed(pos, original, HMConfig.CUT_RESPAWN);
+                w.setBlockState(pos, Blocks.AIR.getDefaultState());
+                RestoreManager.get().addTimed(w, pos, original, HMConfig.CUT_RESPAWN);
 
                 NetUtil.sendParticles(p, ParticleTypes.CHERRY_LEAVES, pos, 0.3f, 0.3f, 0.3f, 0.1f, 20);
                 LOGGER.info("Block removed at {}, restore timer started", pos);

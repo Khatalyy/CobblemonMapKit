@@ -6,7 +6,7 @@ import net.minecraft.server.MinecraftServer;
 
 public class NetworkingTick {
     public static void tick(MinecraftServer server) {
-        RestoreManager.get().tick(server.getOverworld());
+        RestoreManager.get().tick(server);
         ClimbManager.get().tick();
     }
 }
