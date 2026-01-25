@@ -28,6 +28,9 @@ public class HMConfig {
     // --- Flash duration ---
     public static int FLASH_DURATION = 60;
 
+    // --- Fly settings ---
+    public static boolean FLY_ACROSS_DIM = false;
+
     // --- Required Items ---
     public static RequiredItem ROCKSMASH = new RequiredItem("mapkit:steel_badge", "❌ You need the Steel Badge to use Rock Smash!");
     public static RequiredItem FLY = new RequiredItem(null, "❌ You need a special item to use Fly!");
@@ -39,7 +42,7 @@ public class HMConfig {
     public static RequiredItem ULTRAHOLE = new RequiredItem(null, "❌ You need Ultrabeast to summon a Ultra Hole!");
 
     // --- UltraHole default settings ---
-    public static UltraHoleSettings ULTRAHOLE_SETTINGS = new UltraHoleSettings("minecraft:the_end", 0, 64, 0, 800); // default durata 200 tick
+    public static UltraHoleSettings ULTRAHOLE_SETTINGS = new UltraHoleSettings("minecraft:the_end", 0, 64, 0, 800); // default durata 800 tick
 
     // --- Load config from JSON ---
     public static void load() {
@@ -51,6 +54,7 @@ public class HMConfig {
 
             String jsonContent = Files.readString(CONFIG_FILE.toPath());
 
+            // controllo di "sanità" per rigenerare config vecchi/rotti
             if (!jsonContent.contains("\"respawn_time_seconds\"") ||
                     !jsonContent.contains("\"flash_duration_seconds\"") ||
                     !jsonContent.contains("\"required_items\"") ||
@@ -93,7 +97,14 @@ public class HMConfig {
             }
 
             // Load flash duration
-            if (data.flash_duration_seconds != null) FLASH_DURATION = data.flash_duration_seconds;
+            if (data.flash_duration_seconds != null) {
+                FLASH_DURATION = data.flash_duration_seconds;
+            }
+
+            // Load fly setting (default se nullo)
+            if (data.flyAcrossDim != null) {
+                FLY_ACROSS_DIM = data.flyAcrossDim;
+            }
 
             // Load required items
             ROCKSMASH = data.required_items.rocksmash;
@@ -128,6 +139,8 @@ public class HMConfig {
             data.respawn_time_seconds.strength = STRENGTH_RESPAWN;
             data.flash_duration_seconds = FLASH_DURATION;
 
+            data.flyAcrossDim = FLY_ACROSS_DIM;
+
             data.required_items.rocksmash = ROCKSMASH;
             data.required_items.fly = FLY;
             data.required_items.cut = CUT;
@@ -153,6 +166,9 @@ public class HMConfig {
         Integer flash_duration_seconds = FLASH_DURATION;
         RequiredItems required_items = new RequiredItems();
         UltraHoleSettings ultrahole_settings = new UltraHoleSettings();
+
+        // nuovo campo: true/false nel json
+        Boolean flyAcrossDim = FLY_ACROSS_DIM;
     }
 
     private static class RespawnTimes {
@@ -166,7 +182,10 @@ public class HMConfig {
         public String message;
 
         public RequiredItem() {}
-        public RequiredItem(String item, String message) { this.item = item; this.message = message; }
+        public RequiredItem(String item, String message) {
+            this.item = item;
+            this.message = message;
+        }
     }
 
     private static class RequiredItems {

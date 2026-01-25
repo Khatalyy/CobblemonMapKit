@@ -42,7 +42,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20")
 
     // Cobblemon
-    modImplementation("com.cobblemon:fabric:1.7.1+1.21.1")
+    modImplementation("com.cobblemon:fabric:1.7.2+1.21.1")
 
     // Test
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")

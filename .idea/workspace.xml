@@ -4,17 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b39f538f-0004-4040-97e6-a9eeeda397bf" name="Changes" comment="ora la lista di fly target è scrollabile">
-      <change beforePath="$PROJECT_DIR$/.idea/kotlinc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/kotlinc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/Minecraft_Client.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/Minecraft_Client.xml" afterDir="false" />
+    <list default="true" id="b39f538f-0004-4040-97e6-a9eeeda397bf" name="Changes" comment="1.7.1 e fix dimensione per reset blocco, albero e roccia">
       <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/Minecraft_Server.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/Minecraft_Server.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/NetworkingTick.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/NetworkingTick.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/CutHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/CutHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/RockSmashHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/RockSmashHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/StrengthHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/StrengthHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/manager/RestoreManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/manager/RestoreManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/config/HMConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/config/HMConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/FlyHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/FlyHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/packet/fly/FlyPacketC2S.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/packet/fly/FlyPacketC2S.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/screen/custom/FlyTargetListScreen.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/screen/custom/FlyTargetListScreen.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -251,7 +248,15 @@
       <option name="project" value="LOCAL" />
       <updated>1766780074521</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="1.7.1 e fix dimensione per reset blocco, albero e roccia">
+      <option name="closed" value="true" />
+      <created>1768582543184</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1768582543184</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -268,6 +273,7 @@
     <MESSAGE value="aggiunto campo per lo shiny odds e il controllo nello spawn" />
     <MESSAGE value="compatibilità 1.7" />
     <MESSAGE value="ora la lista di fly target è scrollabile" />
-    <option name="LAST_COMMIT_MESSAGE" value="ora la lista di fly target è scrollabile" />
+    <MESSAGE value="1.7.1 e fix dimensione per reset blocco, albero e roccia" />
+    <option name="LAST_COMMIT_MESSAGE" value="1.7.1 e fix dimensione per reset blocco, albero e roccia" />
   </component>
 </project>
