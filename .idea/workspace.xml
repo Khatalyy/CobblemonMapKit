@@ -4,14 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b39f538f-0004-4040-97e6-a9eeeda397bf" name="Changes" comment="1.7.1 e fix dimensione per reset blocco, albero e roccia">
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/Minecraft_Server.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/Minecraft_Server.xml" afterDir="false" />
+    <list default="true" id="b39f538f-0004-4040-97e6-a9eeeda397bf" name="Changes" comment="ora il fly può funzionare tra dimensioni e restore dei blocchi calcola la dimensione in cui è stato rotto">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/config/HMConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/config/HMConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/FlyHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/handlers/FlyHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/packet/fly/FlyPacketC2S.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/networking/packet/fly/FlyPacketC2S.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/screen/custom/FlyTargetListScreen.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cobblemon/khataly/mapkit/screen/custom/FlyTargetListScreen.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/fabric.mod.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/fabric.mod.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -256,7 +252,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768582543184</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="ora il fly può funzionare tra dimensioni e restore dei blocchi calcola la dimensione in cui è stato rotto">
+      <option name="closed" value="true" />
+      <created>1769362431658</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1769362431658</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -274,6 +278,7 @@
     <MESSAGE value="compatibilità 1.7" />
     <MESSAGE value="ora la lista di fly target è scrollabile" />
     <MESSAGE value="1.7.1 e fix dimensione per reset blocco, albero e roccia" />
-    <option name="LAST_COMMIT_MESSAGE" value="1.7.1 e fix dimensione per reset blocco, albero e roccia" />
+    <MESSAGE value="ora il fly può funzionare tra dimensioni e restore dei blocchi calcola la dimensione in cui è stato rotto" />
+    <option name="LAST_COMMIT_MESSAGE" value="ora il fly può funzionare tra dimensioni e restore dei blocchi calcola la dimensione in cui è stato rotto" />
   </component>
 </project>
