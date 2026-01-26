@@ -24,11 +24,17 @@ import net.minecraft.world.World;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class GrassZoneCommands {
+
+    // Clipboard per-player: UUID player -> pool copiata
+    private static final Map<UUID, List<SpawnEntry>> POOL_CLIPBOARD = new ConcurrentHashMap<>();
 
     public static void register(CommandDispatcher<ServerCommandSource> d) {
 
@@ -165,6 +171,88 @@ public class GrassZoneCommands {
                                     src.sendFeedback(() -> Text.literal(
                                             (ok ? "§aZone removed. " : "§cRemoval error. ") + "§7Grass removed: §f" + removed
                                     ), false);
+                                    return 1;
+                                })
+                        )
+
+                        // ===== COPY / PASTE POOL =====
+                        .then(literal("copypool").requires(src -> src.hasPermissionLevel(2))
+                                // /grasszone copypool (zona dove sei)
+                                .executes(ctx -> {
+                                    var src = ctx.getSource();
+                                    ServerPlayerEntity p = src.getPlayer();
+                                    if (p == null) return 0;
+
+                                    Zone z = findZoneUnderPlayer(p);
+                                    if (z == null) {
+                                        src.sendFeedback(() -> Text.literal("§7No grass zone here."), false);
+                                        return 1;
+                                    }
+
+                                    List<SpawnEntry> copied = z.spawns().stream()
+                                            .map(s -> new SpawnEntry(s.species, s.minLevel, s.maxLevel, s.weight, s.time, s.aspect))
+                                            .toList();
+
+                                    POOL_CLIPBOARD.put(p.getUuid(), copied);
+                                    src.sendFeedback(() -> Text.literal("§aPool copiata da §e" + z.name() + "§a. §7Entries: §f" + copied.size()), false);
+                                    return 1;
+                                })
+                                // /grasszone copypool <name>
+                                .then(CommandManager.argument("name", StringArgumentType.greedyString()).suggests(zoneNameSuggest)
+                                        .executes(ctx -> {
+                                            var src = ctx.getSource();
+                                            ServerPlayerEntity p = src.getPlayer();
+                                            if (p == null) return 0;
+
+                                            String name = StringArgumentType.getString(ctx, "name");
+                                            Zone z = getZoneByName(name);
+                                            if (z == null) {
+                                                src.sendFeedback(() -> Text.literal("§cZone not found: §f" + name), false);
+                                                return 1;
+                                            }
+
+                                            List<SpawnEntry> copied = z.spawns().stream()
+                                                    .map(s -> new SpawnEntry(s.species, s.minLevel, s.maxLevel, s.weight, s.time, s.aspect))
+                                                    .toList();
+
+                                            POOL_CLIPBOARD.put(p.getUuid(), copied);
+                                            src.sendFeedback(() -> Text.literal("§aPool copiata da §e" + z.name() + "§a. §7Entries: §f" + copied.size()), false);
+                                            return 1;
+                                        })
+                                )
+                        )
+
+                        .then(literal("pastepool").requires(src -> src.hasPermissionLevel(2))
+                                // /grasszone pastepool (incolla sulla zona dove sei)
+                                .executes(ctx -> {
+                                    var src = ctx.getSource();
+                                    ServerPlayerEntity p = src.getPlayer();
+                                    if (p == null) return 0;
+
+                                    Zone target = findZoneUnderPlayer(p);
+                                    if (target == null) {
+                                        src.sendFeedback(() -> Text.literal("§7No grass zone here."), false);
+                                        return 1;
+                                    }
+
+                                    List<SpawnEntry> clip = POOL_CLIPBOARD.get(p.getUuid());
+                                    if (clip == null) {
+                                        src.sendFeedback(() -> Text.literal("§cNessuna pool copiata. Usa §f/grasszone copypool§c prima."), false);
+                                        return 1;
+                                    }
+
+                                    List<SpawnEntry> toApply = clip.stream()
+                                            .map(s -> new SpawnEntry(s.species, s.minLevel, s.maxLevel, s.weight, s.time, s.aspect))
+                                            .toList();
+
+                                    boolean ok = GrassZonesConfig.setZoneSpawns(target.id(), toApply);
+
+                                    src.sendFeedback(() -> Text.literal(
+                                            ok
+                                                    ? ("§aPool incollata in §e" + target.name() + "§a. §7Entries: §f" + toApply.size())
+                                                    : "§cErrore durante il salvataggio della pool."
+                                    ), false);
+
                                     return 1;
                                 })
                         )

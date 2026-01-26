@@ -409,6 +409,24 @@ public class GrassZonesConfig {
         return true;
     }
 
+    // >>> NUOVO: sostituisce la lista spawns di una zona (usato da pastepool)
+    public static boolean setZoneSpawns(UUID zoneId, List<SpawnEntry> newSpawns) {
+        Zone z = ZONES.get(zoneId);
+        if (z == null) return false;
+
+        Zone nz = z.withSpawns(newSpawns == null ? List.of() : newSpawns);
+        ZONES.put(zoneId, nz);
+
+        try {
+            File f = writeZoneFile(nz);
+            FILE_BY_ID.put(zoneId, f);
+        } catch (IOException e) {
+            CobblemonMapKitMod.LOGGER.error("[GrassZonesConfig] Write error on setZoneSpawns {}: {}", zoneId, e.getMessage(), e);
+            return false;
+        }
+        return true;
+    }
+
     public static Collection<Zone> getAll() { return Collections.unmodifiableCollection(ZONES.values()); }
     public static Zone get(UUID id) { return ZONES.get(id); }
 
